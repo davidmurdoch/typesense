@@ -1,3 +1,4 @@
+#ifdef __APPLE__
 #include <string>
 #include <unistd.h>
 #include <execinfo.h>
@@ -82,3 +83,4 @@ public:
         exit(-1);
     }
 };
+#endif // __APPLE__: Linux uses backward.hpp.

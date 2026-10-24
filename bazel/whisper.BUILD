@@ -19,14 +19,27 @@ print("CUDA: " + str(select({
 
 load("@cuda_home_repo//:cuda_home.bzl", "CUDA_HOME")
 
+CMAKE_CACHE_ENTRIES = {
+    "BUILD_SHARED_LIBS": "OFF",
+    "WHISPER_BUILD_EXAMPLES": "OFF",
+    "WHISPER_BUILD_TESTS": "OFF",
+    "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+}
+
+CMAKE_MUSL_CACHE_ENTRIES = dict(
+    CMAKE_CACHE_ENTRIES,
+    WHISPER_NO_AVX = "ON",
+    WHISPER_NO_AVX2 = "ON",
+    WHISPER_NO_FMA = "ON",
+    WHISPER_NO_F16C = "ON",
+)
+
 cmake(
     name = "whisper",
-    cache_entries= {
-        'BUILD_SHARED_LIBS': 'OFF',
-        'WHISPER_BUILD_EXAMPLES': 'OFF',
-        'WHISPER_BUILD_TESTS': 'OFF',
-        'CMAKE_POSITION_INDEPENDENT_CODE': 'ON',
-    }, 
+    cache_entries = select({
+        "@//bazel/config:musl": CMAKE_MUSL_CACHE_ENTRIES,
+        "//conditions:default": CMAKE_CACHE_ENTRIES,
+    }),
     build_args = [
         "--", "-j8"
     ],

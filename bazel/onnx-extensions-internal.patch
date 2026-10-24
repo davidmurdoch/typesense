@@ -1,0 +1,45 @@
+diff --git a/base/base64.h b/base/base64.h
+--- a/base/base64.h
++++ b/base/base64.h
+@@ -2,6 +2,7 @@
+ // Licensed under the MIT License.
+ // Freely inspired from https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64
+ #pragma once
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff --git a/operators/math/segement_extraction.cc b/operators/math/segement_extraction.cc
+--- a/operators/math/segement_extraction.cc
++++ b/operators/math/segement_extraction.cc
+@@ -2,6 +2,7 @@
+ // Licensed under the MIT License.
+ 
+ #include "segment_extraction.hpp"
++#include <cstdint>
+ 
+ KernelSegmentExtraction::KernelSegmentExtraction(const OrtApi& api, const OrtKernelInfo& info)
+     : BaseKernel(api, info) {
+diff --git a/cmake/externals/dlib.cmake b/cmake/externals/dlib.cmake
+--- a/cmake/externals/dlib.cmake
++++ b/cmake/externals/dlib.cmake
+@@ -1,6 +1,6 @@
+ FetchContent_Declare(dlib
+     GIT_REPOSITORY https://github.com/davisking/dlib.git
+-    GIT_TAG        v19.22
++    GIT_TAG        70ea028f12e10f4d992a0c4f0169749eae5bb185
+ )
+ 
+ FetchContent_GetProperties(dlib)
+diff --git a/cmake/externals/opencv.cmake b/cmake/externals/opencv.cmake
+--- a/cmake/externals/opencv.cmake
++++ b/cmake/externals/opencv.cmake
+@@ -114,7 +114,7 @@
+ FetchContent_Declare(
+     opencv
+     GIT_REPOSITORY https://github.com/opencv/opencv.git
+-    GIT_TAG        4.5.4
++    GIT_TAG        4223495e6cd67011f86b8ecd9be1fa105018f3b1
+     GIT_SHALLOW    TRUE
+     -DBUILD_DOCS:BOOL=FALSE
+     -DBUILD_EXAMPLES:BOOL=FALSE

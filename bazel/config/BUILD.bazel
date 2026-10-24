@@ -98,3 +98,9 @@ config_setting(
     values = {"cpu": "darwin"},
     visibility = ["//:__subpkgs__"],
 )
+
+config_setting(
+    name = "musl",
+    define_values = {"libc": "musl"},
+    visibility = ["//visibility:public"],
+)

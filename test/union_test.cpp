@@ -1596,6 +1596,7 @@ TEST_F(UnionTest, UnionHighlightingUAFRaceASAN) {
         auto req_ts = std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
 
+        std::atomic<bool> search_started = false;
         std::atomic<bool> search_done = false;
         std::atomic<bool> search_ok = false;
         auto thread_req_params = local_req_params;
@@ -1603,6 +1604,7 @@ TEST_F(UnionTest, UnionHighlightingUAFRaceASAN) {
         auto thread_searches = local_searches;
         auto search_thread = std::thread([&, thread_req_params, thread_embedded_params, thread_searches, req_ts]() mutable {
             nlohmann::json thread_res;
+            search_started.store(true, std::memory_order_release);
             auto op = collectionManager.do_union(thread_req_params, thread_embedded_params, thread_searches, thread_res, req_ts);
             if(op.ok() && thread_res.contains("hits") && thread_res["hits"].is_array()) {
                 size_t local_hit_count = thread_res["hits"].size();
@@ -1646,8 +1648,10 @@ TEST_F(UnionTest, UnionHighlightingUAFRaceASAN) {
             search_done.store(true, std::memory_order_release);
         });
 
-        // Give do_union a head-start to enter run_search/process_highlight_fields_with_lock.
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // Start mutations as soon as the search thread enters the call.
+        while(!search_started.load(std::memory_order_acquire)) {
+            std::this_thread::yield();
+        }
 
         size_t local_mutations = 0;
         size_t local_mutations_during_search = 0;

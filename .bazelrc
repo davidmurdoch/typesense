@@ -15,3 +15,28 @@ run --define=BRPC_WITH_GLOG=true
 build --enable_platform_specific_config
 
 build:linux --action_env=BAZEL_LINKLIBS="-l%:libstdc++.a -l%:libgcc.a"
+
+# Native Alpine uses the host JDK, CMake and musl-compatible dependencies.
+build:alpine --define=libc=musl
+build:alpine --define=BRPC_WITH_LIBUNWIND=true
+build:alpine --java_runtime_version=local_jdk
+build:alpine --tool_java_runtime_version=local_jdk
+build:alpine --extra_toolchains=@rules_foreign_cc//toolchains:preinstalled_cmake_toolchain
+build:alpine --conlyopt=-std=gnu17
+build:alpine --host_conlyopt=-std=gnu17
+build:alpine --copt=-D_LARGEFILE64_SOURCE
+build:alpine --host_copt=-D_LARGEFILE64_SOURCE
+build:alpine --copt=-march=x86-64
+build:alpine --copt=-mtune=generic
+build:alpine --host_copt=-march=x86-64
+build:alpine --host_copt=-mtune=generic
+build:alpine --action_env=CMAKE_POLICY_VERSION_MINIMUM=3.5
+build:alpine --action_env=CMAKE_C_COMPILER_LAUNCHER
+build:alpine --action_env=CMAKE_CXX_COMPILER_LAUNCHER
+build:alpine --action_env=CCACHE_DIR
+build:alpine --action_env=HTTP_PROXY
+build:alpine --action_env=HTTPS_PROXY
+build:alpine --action_env=NO_PROXY
+build:alpine --action_env=SSL_CERT_FILE
+build:alpine --action_env=GIT_SSL_CAINFO
+build:alpine --action_env=CMAKE_TLS_CAINFO

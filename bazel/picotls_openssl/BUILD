@@ -10,6 +10,7 @@ cc_library(
     hdrs = glob(["include/**/*.h"]),
     copts = [
         "-std=c99",
+        "-D_POSIX_C_SOURCE=200809L",
     ],
     includes = ["include"],
     deps = [

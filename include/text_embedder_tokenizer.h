@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -40,7 +40,7 @@ class TextEmbeddingTokenizer {
 
 class BertTokenizerWrapper : public TextEmbeddingTokenizer {
     protected:
-        std::unique_ptr<BertTokenizer> bert_tokenizer_;
+        std::unique_ptr<ort_extensions::BertTokenizer> bert_tokenizer_;
     public:
         BertTokenizerWrapper(const std::string& vocab_path);
         encoded_input_t Encode(const std::string& text) override;

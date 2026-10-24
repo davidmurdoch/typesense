@@ -28,3 +28,16 @@
          LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 
+diff --git a/src/s2/base/port.h b/src/s2/base/port.h
+--- src/s2/base/port.h
++++ src/s2/base/port.h
+@@ -335,7 +335,8 @@
+ #define bswap_32(x) OSSwapInt32(x)
+ #define bswap_64(x) OSSwapInt64(x)
+ 
+-#elif defined(__GLIBC__) || defined(__BIONIC__) || defined(__ASYLO__)
++#elif defined(__GLIBC__) || defined(__BIONIC__) || defined(__ASYLO__) || \
++    defined(__linux__)
+ #include <byteswap.h>  // IWYU pragma: export
+ 
+ #else

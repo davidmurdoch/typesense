@@ -1,0 +1,23 @@
+diff --git a/onnxruntime/core/providers/cpu/ml/tree_ensemble_aggregator.h b/onnxruntime/core/providers/cpu/ml/tree_ensemble_aggregator.h
+--- onnxruntime/core/providers/cpu/ml/tree_ensemble_aggregator.h
++++ onnxruntime/core/providers/cpu/ml/tree_ensemble_aggregator.h
+@@ -305,7 +305,7 @@
+ template <typename InputType, typename ThresholdType, typename OutputType>
+ class TreeAggregatorMax : public TreeAggregator<InputType, ThresholdType, OutputType> {
+  public:
+-  TreeAggregatorMax<InputType, ThresholdType, OutputType>(size_t n_trees,
++  TreeAggregatorMax(size_t n_trees,
+                                 const int64_t& n_targets_or_classes,
+                                 POST_EVAL_TRANSFORM post_transform,
+                                 const std::vector<ThresholdType>& base_values) : 
+diff --git a/onnxruntime/core/optimizer/transpose_optimizer/optimizer_api.h b/onnxruntime/core/optimizer/transpose_optimizer/optimizer_api.h
+--- onnxruntime/core/optimizer/transpose_optimizer/optimizer_api.h
++++ onnxruntime/core/optimizer/transpose_optimizer/optimizer_api.h
+@@ -3,6 +3,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <memory>
+ #include <optional>
+ #include <string>

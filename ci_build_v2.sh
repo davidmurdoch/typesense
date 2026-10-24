@@ -32,20 +32,27 @@ if [[ "$@" =~ --jobs=([0-9]+) ]]; then
   JOBS=${BASH_REMATCH[1]}
 fi
 
+BAZEL_FLAGS=()
+DEPLOY_DOCKERFILE=docker/deployment.Dockerfile
+if [[ " $* " == *" --alpine "* ]]; then
+  BAZEL_FLAGS+=(--config=alpine)
+  DEPLOY_DOCKERFILE=docker/alpine.Dockerfile
+fi
+
 # First build protobuf
-bazel build --jobs=$JOBS @com_google_protobuf//:protobuf_headers
-bazel build --jobs=$JOBS @com_google_protobuf//:protobuf_lite
-bazel build --jobs=$JOBS @com_google_protobuf//:protobuf
-bazel build --jobs=$JOBS @com_google_protobuf//:protoc
+bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protobuf_headers
+bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protobuf_lite
+bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protobuf
+bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protoc
 
 # Build whisper
 if [[ "$@" == *"--with-cuda"* ]]; then
-  bazel build --jobs=$JOBS @whisper.cpp//:whisper_cuda_shared $CUDA_FLAGS --experimental_cc_shared_library
+  bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @whisper.cpp//:whisper_cuda_shared $CUDA_FLAGS --experimental_cc_shared_library
   /bin/cp -f $PROJECT_DIR/$BUILD_DIR/external/whisper.cpp/libwhisper_cuda_shared.so $PROJECT_DIR/$BUILD_DIR/
 fi
 
 # Finally build Typesense
-bazel build --verbose_failures --jobs=$JOBS $CUDA_FLAGS $JEMALLOC_FLAGS \
+bazel build "${BAZEL_FLAGS[@]}" --verbose_failures --jobs=$JOBS $CUDA_FLAGS $JEMALLOC_FLAGS \
   --define=TYPESENSE_VERSION=\"$TYPESENSE_VERSION\" //:$TYPESENSE_TARGET
 
 # Copy the binary to an accessible location
@@ -54,7 +61,7 @@ mkdir -p $PROJECT_DIR/dist
 
 if [[ "$@" == *"--build-deploy-image"* ]]; then
     echo "Creating deployment image for Typesense $TYPESENSE_VERSION server ..."
-    docker build --platform linux/${ARCH_NAME} --file $PROJECT_DIR/docker/deployment.Dockerfile \
+    docker build --platform linux/${ARCH_NAME} --file $PROJECT_DIR/$DEPLOY_DOCKERFILE \
           --tag typesense/typesense:$TYPESENSE_VERSION $PROJECT_DIR/$BUILD_DIR
 fi
 
