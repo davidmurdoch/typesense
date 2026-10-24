@@ -1,0 +1,40 @@
+# Maintainer: David Murdoch <187813+davidmurdoch@users.noreply.github.com>
+# abuild supplies build paths and consumes the package metadata.
+# shellcheck disable=SC2034,SC2154
+# Packages the binary built and tested by the native Alpine workflow.
+pkgname=typesense
+pkgver=30.2
+pkgrel=${TYPESENSE_PKGREL:-0}
+pkgdesc="Fast, typo-tolerant search engine"
+url="https://typesense.org"
+arch="x86_64"
+license="GPL-3.0-only"
+depends="ca-certificates libgcc libunwind musl-fts musl-obstack"
+subpackages="$pkgname-openrc"
+install="$pkgname.pre-install"
+source="typesense.initd typesense.confd typesense-server.ini LICENSE.txt"
+options="!check !strip"
+builddir="$srcdir"
+
+build() {
+    :
+}
+
+package() {
+    install -Dm755 "$TYPESENSE_BINARY" "$pkgdir/usr/bin/typesense-server"
+    install -Dm755 "$srcdir/typesense.initd" "$pkgdir/etc/init.d/typesense"
+    install -Dm644 "$srcdir/typesense.confd" "$pkgdir/etc/conf.d/typesense"
+    install -Dm640 "$srcdir/typesense-server.ini" "$pkgdir/etc/typesense/typesense-server.ini"
+    chgrp typesense "$pkgdir/etc/typesense/typesense-server.ini"
+    install -Dm644 "$srcdir/LICENSE.txt" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.txt"
+}
+
+pkgusers="typesense"
+pkggroups="typesense"
+
+sha512sums="
+029a15915180154bcf35532b9f988f757b3f249900d807c6e85cd0e8612b22d88ee8f7e45e124a0e629d9ce9b2f256019effd033648f4f07998bc595d7e47895  typesense.initd
+4e447eb0d9b4c9ac207e2288977fe2f5685fe4dc22038e229325516a5c82243d924f360530e2d8997d568eb0119280f915736190f41d0b176b28d71b9b099a60  typesense.confd
+1b194bc59c52b2e6dc438fd112da1b2824612d8152844ff6dc7f0af0874d0c2698f068690baadc5da6c590d48a6b65fb99973f692da39bc9440afbc1ee3e9a1d  typesense-server.ini
+adfa9547f59d194835eb7cfa4014fd3f972470f92802e1f9c39e636225f285331956620accc7d431e5c0ff4171a462ef184c334e2bd639a92d383e22501ae60c  LICENSE.txt
+"

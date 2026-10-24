@@ -1,0 +1,35 @@
+#!/sbin/openrc-run
+# OpenRC consumes the service metadata below.
+# shellcheck disable=SC2034
+
+name="Typesense"
+description="Typesense search server"
+command="/usr/bin/typesense-server"
+command_args="--config=${typesense_config:-/etc/typesense/typesense-server.ini}"
+command_user="typesense:typesense"
+supervisor="supervise-daemon"
+pidfile="/run/typesense/supervisor.pid"
+output_log="/var/log/typesense-supervisor/stdout.log"
+error_log="/var/log/typesense-supervisor/stderr.log"
+respawn_delay=5
+respawn_max=5
+respawn_period=60
+stopsig="INT"
+retry="INT/30/KILL/5"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath -d -m 0750 -o typesense:typesense /var/lib/typesense /var/log/typesense
+    # The server account must not control supervisor PID files or log paths.
+    checkpath -d -m 0750 -o root:root /run/typesense
+    checkpath -d -m 0750 -o root:typesense /var/log/typesense-supervisor
+    checkpath -f -m 0640 -o typesense:typesense "$output_log" "$error_log"
+    if [ ! -r "${typesense_config:-/etc/typesense/typesense-server.ini}" ]; then
+        eerror "Configure /etc/typesense/typesense-server.ini before starting Typesense."
+        return 1
+    fi
+}

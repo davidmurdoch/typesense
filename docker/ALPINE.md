@@ -2,6 +2,9 @@
 
 The Alpine build targets x86-64 Linux with musl. It uses the same Typesense sources and features as the standard CPU build. CUDA and other architectures are not covered by this configuration.
 
+Prebuilt signed APK packages, OpenRC service setup and release publishing are
+documented in [packaging/alpine/README.md](../packaging/alpine/README.md).
+
 Build the native toolchain from the repository root:
 
 ```sh

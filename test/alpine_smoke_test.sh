@@ -5,6 +5,8 @@ IMAGE=${1:-typesense-alpine-runtime:test}
 CONTAINER="typesense-alpine-test-$RANDOM-$$"
 VOLUME="$CONTAINER-data"
 API_KEY=typesense-test-key
+# shellcheck source=test/alpine_smoke_helpers.sh
+source "$(dirname "$0")/alpine_smoke_helpers.sh"
 created=false
 volume_created=false
 
@@ -29,30 +31,6 @@ docker run -d --name "$CONTAINER" --cpus=1 --memory=384m --memory-swap=384m \
 created=true
 URL="http://$(docker port "$CONTAINER" 8108/tcp)"
 
-ready() {
-  for ((attempt=0; attempt<120; attempt++)); do
-    if curl --silent --fail --max-time 1 "$URL/health" | jq -e '.ok == true' >/dev/null; then
-      return
-    fi
-    sleep 0.25
-  done
-  echo 'Typesense did not become ready' >&2
-  return 1
-}
-
-request() {
-  local path=$1
-  shift
-  curl --silent --show-error --fail -H "X-TYPESENSE-API-KEY: $API_KEY" \
-    -H 'Content-Type: application/json' "$@" "$URL$path"
-}
-
-check_search() {
-  request /collections/portability | jq -e '.num_documents == 3' >/dev/null
-  request /multi_search -X POST --data \
-    '{"searches":[{"collection":"portability","q":"bananna","query_by":"name"},{"collection":"portability","q":"cafe","query_by":"name"}]}' \
-    | jq -e '.results[0].hits[0].document.id == "banana" and .results[1].hits[0].document.id == "cafe"' >/dev/null
-}
 
 ready
 test "$(docker exec "$CONTAINER" id -u)" != 0
@@ -62,11 +40,7 @@ docker exec "$CONTAINER" sh -c '
   done
   test ! -e /lib/ld-linux-x86-64.so.2
 '
-request /collections -X POST --data \
-  '{"name":"portability","fields":[{"name":"name","type":"string"}]}' >/dev/null
-request '/collections/portability/documents/import?action=create' -X POST --data-binary \
-  $'{"id":"banana","name":"Banana"}\n{"id":"cafe","name":"Café latte"}\n{"id":"chicken","name":"Chicken breast raw"}' \
-  | jq -se 'length == 3 and all(.[]; .success)' >/dev/null
+create_fixture
 check_search
 
 docker stop --timeout=30 "$CONTAINER" >/dev/null

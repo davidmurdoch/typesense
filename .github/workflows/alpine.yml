@@ -1,20 +1,39 @@
 name: alpine
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+    tags: ['v*-alpine.*']
+  pull_request:
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 jobs:
   native-alpine:
     runs-on: ubuntu-22.04
     timeout-minutes: 360
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+      tag: ${{ steps.version.outputs.tag }}
+      commit: ${{ steps.version.outputs.commit }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Select package version
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: bash packaging/alpine/version.sh "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Test release controls
+        run: python3 -B -m unittest discover -s test -p alpine_release_workflow_test.py
 
       - uses: docker/setup-buildx-action@v3
 
@@ -39,7 +58,7 @@ jobs:
 
       - name: Build and test
         env:
-          TYPESENSE_VERSION: '30.2'
+          TYPESENSE_VERSION: ${{ steps.version.outputs.upstream }}
           TYPESENSE_TARGET: typesense-server
         run: |
           mkdir -p "$RUNNER_TEMP/typesense-alpine-cache"
@@ -66,8 +85,94 @@ jobs:
           docker build -f docker/alpine.Dockerfile -t typesense-alpine-runtime:test dist
           bash test/alpine_smoke_test.sh typesense-alpine-runtime:test
 
+      - name: Build APK packager
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/alpine-packager.Dockerfile
+          load: true
+          tags: typesense-alpine-packager:test
+          cache-from: type=gha,scope=alpine-packager
+          cache-to: type=gha,mode=max,scope=alpine-packager
+
+      - name: Prepare package signing key
+        env:
+          IS_RELEASE: ${{ steps.version.outputs.release }}
+          APK_SIGNING_KEY: ${{ github.ref_type == 'tag' && secrets.APK_SIGNING_KEY || '' }}
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/typesense-apk-signing"
+          key="$RUNNER_TEMP/typesense-apk-signing/typesense-alpine.rsa"
+          if [ "$IS_RELEASE" = true ]; then
+            if [ -z "$APK_SIGNING_KEY" ]; then
+              echo 'Configure the APK_SIGNING_KEY repository secret before tagging a release.' >&2
+              exit 1
+            fi
+            printf '%s\n' "$APK_SIGNING_KEY" > "$key"
+          else
+            openssl genrsa -out "$key" 4096
+          fi
+          openssl pkey -in "$key" -check -noout
+
+      - name: Package tested binary
+        env:
+          TYPESENSE_PKGREL: ${{ steps.version.outputs.revision }}
+          SOURCE_COMMIT: ${{ steps.version.outputs.commit }}
+          SOURCE_DATE_EPOCH: ${{ steps.version.outputs.epoch }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p dist/alpine-release
+          docker run --rm \
+            --mount "type=bind,src=$PWD/dist/typesense-server,dst=/input/typesense-server,readonly" \
+            --mount "type=bind,src=$PWD/dist/alpine-release,dst=/out" \
+            --mount "type=bind,src=$RUNNER_TEMP/typesense-apk-signing/typesense-alpine.rsa,dst=/run/secrets/typesense-alpine.rsa,readonly" \
+            -e TYPESENSE_PKGREL -e SOURCE_COMMIT -e SOURCE_DATE_EPOCH -e SOURCE_REPOSITORY \
+            typesense-alpine-packager:test
+
+      - name: Remove signing key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/typesense-apk-signing"
+
+      - name: Test signed APK repository and OpenRC service
+        run: |
+          docker build -f docker/alpine-package-test.Dockerfile -t typesense-alpine-package-test:test .
+          docker run --rm --cpus=1 --memory=512m --memory-swap=512m \
+            --mount "type=bind,src=$PWD/dist/alpine-release,dst=/repo,readonly" \
+            typesense-alpine-package-test:test
+
       - name: Save binary
         uses: actions/upload-artifact@v4
         with:
           name: typesense-server-alpine
           path: dist/typesense-server
+
+      - name: Save release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: typesense-alpine-packages
+          path: dist/alpine-release/
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'push' && github.ref_type == 'tag' && needs.native-alpine.outputs.release == 'true'
+    needs: native-alpine
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.native-alpine.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: typesense-alpine-packages
+          path: dist/alpine-release
+      - name: Publish tested release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.native-alpine.outputs.tag }}
+          SOURCE_COMMIT: ${{ needs.native-alpine.outputs.commit }}
+        run: bash packaging/alpine/publish.sh "$RELEASE_TAG" "$SOURCE_COMMIT" dist/alpine-release
