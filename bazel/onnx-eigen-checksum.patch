@@ -1,0 +1,18 @@
+diff --git a/cmake/external/eigen.cmake b/cmake/external/eigen.cmake
+--- cmake/external/eigen.cmake
++++ cmake/external/eigen.cmake
+@@ -8,12 +8,14 @@
+         FetchContent_Declare(
+         eigen
+         URL https://gitlab.com/libeigen/eigen/-/archive/d10b27fe37736d2944630ecd7557cefa95cf87c9/eigen-d10b27fe37736d2944630ecd7557cefa95cf87c9.zip
++        URL_HASH SHA256=ef863ed0b22b10b46a0eb15f6aac51a7d05fbba100aad8024a864c908ed3030e
+         PATCH_COMMAND ${Patch_EXECUTABLE} --ignore-space-change --ignore-whitespace < ${PROJECT_SOURCE_DIR}/patches/eigen/Fix_Eigen_Build_Break.patch
+ 		)
+     else()
+         FetchContent_Declare(
+         eigen
+         URL https://gitlab.com/libeigen/eigen/-/archive/d10b27fe37736d2944630ecd7557cefa95cf87c9/eigen-d10b27fe37736d2944630ecd7557cefa95cf87c9.zip
++        URL_HASH SHA256=ef863ed0b22b10b46a0eb15f6aac51a7d05fbba100aad8024a864c908ed3030e
+ 		)
+     endif()
+     FetchContent_Populate(eigen)

@@ -206,6 +206,7 @@ target_compile_definitions(
 
 target_compile_definitions(
     typesense-test PRIVATE
+    TEST_BUILD
     ROOT_DIR="${CMAKE_SOURCE_DIR}/"
     TYPESENSE_VERSION="${TYPESENSE_VERSION}"
 )

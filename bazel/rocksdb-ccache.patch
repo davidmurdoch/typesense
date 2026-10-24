@@ -1,0 +1,18 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -60,8 +60,12 @@
+ 
+ find_program(CCACHE_FOUND ccache)
+ if(CCACHE_FOUND)
+-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
++  if(NOT DEFINED CMAKE_C_COMPILER_LAUNCHER)
++    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_FOUND}")
++  endif()
++  if(NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER)
++    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_FOUND}")
++  endif()
+ endif(CCACHE_FOUND)
+ 
+ option(WITH_JEMALLOC "build with JeMalloc" OFF)

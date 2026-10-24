@@ -57,6 +57,10 @@ load("@cuda_home_repo//:cuda_home.bzl", "CUDA_HOME")
 load("@cuda_home_repo//:cudnn_home.bzl", "CUDNN_HOME")
 
 __ONNXRUNTIME_WITHOUT_CUDA = {'onnxruntime_RUN_ONNX_TESTS':'OFF',
+'onnxruntime_BUILD_UNIT_TESTS':'OFF',
+'BUILD_PERF_TESTS':'OFF',
+'BUILD_TESTS':'OFF',
+'BUILD_TESTING':'OFF',
 'onnxruntime_GENERATE_TEST_REPORTS':'ON',
 'onnxruntime_USE_MIMALLOC':'OFF',
 'onnxruntime_ENABLE_PYTHON':'OFF',
@@ -110,12 +114,16 @@ __ONNXRUNTIME_WITHOUT_CUDA = {'onnxruntime_RUN_ONNX_TESTS':'OFF',
 'onnxruntime_PYBIND_EXPORT_OPSCHEMA':'OFF', 'onnxruntime_ENABLE_MEMLEAK_CHECKER':'OFF',
 'CMAKE_BUILD_TYPE':'Release',
 'onnxruntime_USE_EXTENSIONS': 'ON',
-'onnxruntime_EXTENSIONS_PATH': '$EXT_BUILD_ROOT/external/onnx_runtime/cmake/external/onnxruntime-extensions',
+'onnxruntime_EXTENSIONS_PATH': '$EXT_BUILD_ROOT/external/onnx_runtime_extensions_internal',
 'OCOS_ENABLE_BLINGFIRE': 'OFF'
 }
 
 
 __ONNXRUNTIME_WITH_CUDA = {'onnxruntime_RUN_ONNX_TESTS':'OFF',
+'onnxruntime_BUILD_UNIT_TESTS':'OFF',
+'BUILD_PERF_TESTS':'OFF',
+'BUILD_TESTS':'OFF',
+'BUILD_TESTING':'OFF',
 'onnxruntime_GENERATE_TEST_REPORTS':'ON',
 'onnxruntime_USE_MIMALLOC':'OFF',
 'onnxruntime_ENABLE_PYTHON':'OFF',
@@ -169,7 +177,7 @@ __ONNXRUNTIME_WITH_CUDA = {'onnxruntime_RUN_ONNX_TESTS':'OFF',
 'onnxruntime_PYBIND_EXPORT_OPSCHEMA':'OFF', 'onnxruntime_ENABLE_MEMLEAK_CHECKER':'OFF',
 'CMAKE_BUILD_TYPE':'Release', 'onnxruntime_USE_CUDA':'ON', 'onnxruntime_USE_CUDNN':'ON',
 'onnxruntime_USE_EXTENSIONS': 'ON',
-'onnxruntime_EXTENSIONS_PATH': '$EXT_BUILD_ROOT/external/onnx_runtime/cmake/external/onnxruntime-extensions',
+'onnxruntime_EXTENSIONS_PATH': '$EXT_BUILD_ROOT/external/onnx_runtime_extensions_internal',
 'onnxruntime_CUDA_HOME': CUDA_HOME,
 'onnxruntime_CUDNN_HOME': CUDNN_HOME,
 'CMAKE_CUDA_COMPILER': CUDA_HOME + "/bin/nvcc",
@@ -185,6 +193,14 @@ config_setting(
 
 cmake(
     name = "onnxruntime",
+    # Typesense packages these archives even with ONNX test executables disabled.
+    targets = ["nsync_cpp", "cpuinfo", "all"],
+    # ONNX predates the warning diagnostics in Alpine's GCC 15 toolchain.
+    generate_args = select({
+        "@//bazel/config:musl": ["--compile-no-warning-as-error"],
+        "//conditions:default": [],
+    }),
+    data = ["@onnx_runtime_extensions_internal//:sources"],
     lib_source = "//:all_srcs",
     cache_entries = select({
         ":with_cuda":   __ONNXRUNTIME_WITH_CUDA,

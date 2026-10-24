@@ -139,7 +139,7 @@ cc_binary(
 
 filegroup(
     name = "test_src_files",
-    srcs = glob(["test/*.cpp"]),
+    srcs = glob(["test/*.cpp", "test/*.h"]),
 )
 
 filegroup(
@@ -149,6 +149,7 @@ filegroup(
         "test/**/*.ini",
         "test/**/*.jsonl",
         "test/**/*.gz",
+        "test/resources/tokenizer/*.onnx",
     ]),
 )
 
@@ -198,7 +199,8 @@ cc_test(
         "@com_google_googletest//:gtest",
     ],
     defines = [
-        "ROOT_DIR="
+        "ROOT_DIR=",
+        "TYPESENSE_TEST_ORT_EXTENSIONS",
     ],
     linkopts = select({
        ":asan_mode": ["-fsanitize=address", "-fuse-ld=lld"],
@@ -207,4 +209,26 @@ cc_test(
        "@platforms//os:linux": ["-fuse-ld=lld"],
        "//conditions:default": [],
    })
+)
+
+cc_test(
+    name = "portability-test",
+    size = "small",
+    srcs = ["test/alpine_portability_test.cpp"],
+    data = glob(["test/resources/tokenizer/*.onnx"]),
+    defines = [
+        "ROOT_DIR=",
+        "TYPESENSE_TEST_ORT_EXTENSIONS",
+    ],
+    deps = [
+        "@com_github_brpc_brpc//:brpc",
+        "@com_google_googletest//:gtest_main",
+        "@onnx_runtime//:hdrs",
+        "@onnx_runtime//:onnxruntime_lib",
+        "@onnx_runtime_extensions//:operators",
+    ],
+    linkopts = select({
+        "@platforms//os:linux": ["-fuse-ld=lld"],
+        "//conditions:default": [],
+    }),
 )

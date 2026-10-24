@@ -12,6 +12,7 @@
 #include "vq_model_manager.h"
 #include "conversation_model.h"
 #include "text_embedder_remote.h"
+#include "mock_remote_embedder.h"
 
 class CollectionVectorTest : public ::testing::Test {
 protected:
@@ -6193,6 +6194,8 @@ TEST_F(CollectionVectorTest, ConversationWithUnion) {
 }
 
 TEST_F(CollectionVectorTest, UpdateAPIKeyInSchema) {
+    MockRemoteEmbedder remote_api(R"({"data":[{"embedding":[0.25,0.5]}]})");
+
     auto schema_json = R"({
                                         "name": "apitest",
                                         "fields": [

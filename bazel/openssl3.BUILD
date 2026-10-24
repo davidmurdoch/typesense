@@ -27,6 +27,9 @@ configure_make(
             "AR": "",
             "PERL": "$$EXT_BUILD_ROOT$$/$(PERL)",
         },
+        "@//bazel/config:musl": {
+            "PERL": "/usr/bin/perl",
+        },
         "//conditions:default": {
             "PERL": "$$EXT_BUILD_ROOT$$/$(PERL)",
         },
@@ -42,7 +45,10 @@ configure_make(
         "build_libs",
         "install_dev",
     ],
-    toolchains = ["@rules_perl//:current_toolchain"],
+    toolchains = select({
+        "@//bazel/config:musl": [],
+        "//conditions:default": ["@rules_perl//:current_toolchain"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_madler_zlib//:zlib",

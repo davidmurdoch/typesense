@@ -1,0 +1,73 @@
+name: alpine
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-alpine:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build native toolchain
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/alpine-builder.Dockerfile
+          load: true
+          tags: typesense-alpine-builder:test
+          cache-from: type=gha,scope=alpine-builder
+          cache-to: type=gha,mode=max,scope=alpine-builder
+
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/typesense-alpine-cache
+          key: alpine-${{ runner.arch }}-${{ hashFiles('WORKSPACE', 'docker/alpine-builder.Dockerfile', 'docker/bazel-6.2.0.patch') }}-${{ github.sha }}
+          restore-keys: |
+            alpine-${{ runner.arch }}-${{ hashFiles('WORKSPACE', 'docker/alpine-builder.Dockerfile', 'docker/bazel-6.2.0.patch') }}-
+            alpine-${{ runner.arch }}-
+
+      - name: Build and test
+        env:
+          TYPESENSE_VERSION: '30.2'
+          TYPESENSE_TARGET: typesense-server
+        run: |
+          mkdir -p "$RUNNER_TEMP/typesense-alpine-cache"
+          # Bazel requires its output root to be owned by the build user.
+          sudo chown -R 0:0 "$RUNNER_TEMP/typesense-alpine-cache"
+          docker run --rm --cpus=4 --memory=14g --memory-swap=14g \
+            --mount "type=bind,src=$PWD,dst=/src" \
+            --mount "type=bind,src=$RUNNER_TEMP/typesense-alpine-cache,dst=/root/.cache" \
+            -e TYPESENSE_VERSION -e TYPESENSE_TARGET \
+            typesense-alpine-builder:test bash -ec '
+              bash ci_build_v2.sh --alpine --jobs=4
+              bazel test --config=alpine --jobs=4 --test_output=errors //:portability-test
+            '
+
+      - name: Make cache readable
+        if: always()
+        run: |
+          if [ -d "$RUNNER_TEMP/typesense-alpine-cache" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/typesense-alpine-cache"
+          fi
+
+      - name: Test clean runtime
+        run: |
+          docker build -f docker/alpine.Dockerfile -t typesense-alpine-runtime:test dist
+          bash test/alpine_smoke_test.sh typesense-alpine-runtime:test
+
+      - name: Save binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: typesense-server-alpine
+          path: dist/typesense-server

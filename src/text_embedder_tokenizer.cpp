@@ -10,12 +10,14 @@ BertTokenizerWrapper::BertTokenizerWrapper(const std::string& vocab_path) {
     std::stringstream ss;
     ss << stream.rdbuf();
     auto vocab_ = ss.str();
-    bert_tokenizer_ = std::make_unique<BertTokenizer>(vocab_, true, true, ustring("[UNK]"), ustring("[SEP]"), ustring("[PAD]"),
-                    ustring("[CLS]"), ustring("[MASK]"), true, true, ustring("##"),512, std::string("longest_first"));
+    bert_tokenizer_ = std::make_unique<ort_extensions::BertTokenizer>(vocab_, true, true,
+        ort_extensions::ustring("[UNK]"), ort_extensions::ustring("[SEP]"), ort_extensions::ustring("[PAD]"),
+        ort_extensions::ustring("[CLS]"), ort_extensions::ustring("[MASK]"), true, true,
+        ort_extensions::ustring("##"), 512, std::string("longest_first"));
 }
 
 encoded_input_t BertTokenizerWrapper::Encode(const std::string& text) {
-    auto encoded = bert_tokenizer_->Encode(bert_tokenizer_->Tokenize(ustring(text)));
+    auto encoded = bert_tokenizer_->Encode(bert_tokenizer_->Tokenize(ort_extensions::ustring(text)));
     auto input_ids = bert_tokenizer_->AddSpecialToken(encoded);
     auto token_type_ids = bert_tokenizer_->GenerateTypeId(encoded);
     auto attention_mask = std::vector<int64_t>(input_ids.size(), 1);
@@ -34,7 +36,7 @@ DistilbertTokenizer::DistilbertTokenizer(const std::string& vocab_path) : BertTo
 
 
 encoded_input_t DistilbertTokenizer::Encode(const std::string& text) {
-    auto encoded = bert_tokenizer_->Encode(bert_tokenizer_->Tokenize(ustring(text)));
+    auto encoded = bert_tokenizer_->Encode(bert_tokenizer_->Tokenize(ort_extensions::ustring(text)));
     auto input_ids = bert_tokenizer_->AddSpecialToken(encoded);
     auto attention_mask = std::vector<int64_t>(input_ids.size(), 1);
     // DistilBERT supports max sequence length of 512

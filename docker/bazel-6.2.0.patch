@@ -1,0 +1,61 @@
+diff --git a/WORKSPACE b/WORKSPACE
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -671,6 +671,8 @@
+ # Fixes https://github.com/bazelbuild/bazel/issues/15168
+ dist_http_archive(
+     name = "com_google_absl",
++    patches = ["//:absl-cstdint.patch"],
++    patch_args = ["-p1"],
+ )
+ 
+ # for patching the "com_github_cncf_udpa" deps loaded by grpc_deps
+diff --git a/src/main/cpp/blaze.h b/src/main/cpp/blaze.h
+--- a/src/main/cpp/blaze.h
++++ b/src/main/cpp/blaze.h
+@@ -18,6 +18,8 @@
+ 
+ #include "src/main/cpp/option_processor.h"
+ #include "src/main/cpp/workspace_layout.h"
++#include <cstdint>
++
+ #include "src/main/cpp/util/logging.h"
+ 
+ namespace blaze {
+diff --git a/src/main/cpp/util/numbers.h b/src/main/cpp/util/numbers.h
+--- a/src/main/cpp/util/numbers.h
++++ b/src/main/cpp/util/numbers.h
+@@ -14,6 +14,7 @@
+ #ifndef BAZEL_SRC_MAIN_CPP_UTIL_NUMBERS_H_
+ #define BAZEL_SRC_MAIN_CPP_UTIL_NUMBERS_H_
+ 
++#include <cstdint>
+ #include <string>
+ 
+ namespace blaze_util {
+diff --git a/absl-cstdint.patch b/absl-cstdint.patch
+--- /dev/null
++++ b/absl-cstdint.patch
+@@ -0,0 +1,10 @@
++--- a/absl/strings/internal/str_format/extension.h
+++++ b/absl/strings/internal/str_format/extension.h
++@@ -19,6 +19,7 @@
++ #include <limits.h>
++ 
++ #include <cstddef>
+++#include <cstdint>
++ #include <cstring>
++ #include <ostream>
++ 
+diff --git a/tools/allowlists/function_transition_allowlist/BUILD b/tools/allowlists/function_transition_allowlist/BUILD
+--- a/tools/allowlists/function_transition_allowlist/BUILD
++++ b/tools/allowlists/function_transition_allowlist/BUILD
+@@ -7,3 +7,8 @@
+     srcs = glob(["**"]),
+     visibility = ["//tools/allowlists:__pkg__"],
+ )
++
++package_group(
++    name = "function_transition_allowlist",
++    packages = ["public"],
++)
