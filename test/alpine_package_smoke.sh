@@ -44,7 +44,7 @@ test -n "$old_pid"
 test "$(stat -c %u:%g:%a /run/typesense)" = 0:0:750
 test "$(stat -c %U:%G:%a /var/log/typesense-supervisor)" = root:typesense:750
 test "$(stat -c %U:%G:%a /var/log/typesense-supervisor/stdout.log)" = typesense:typesense:640
-(cd /repo && sha256sum --check --strict SHA256SUMS)
+(cd /repo && sha256sum -c SHA256SUMS)
 create_fixture
 check_search
 

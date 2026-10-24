@@ -39,10 +39,14 @@ RELEASE=v30.2-alpine.1
 BASE="https://github.com/$REPOSITORY/releases/download/$RELEASE"
 KEY_SHA256='<approved SHA-256 fingerprint of typesense-alpine.rsa.pub>'
 
-curl --fail --location "$BASE/typesense-alpine.rsa.pub" -o /tmp/typesense-alpine.rsa.pub
-printf '%s  %s\n' "$KEY_SHA256" /tmp/typesense-alpine.rsa.pub | sha256sum -c -
-install -m 0644 /tmp/typesense-alpine.rsa.pub /etc/apk/keys/typesense-alpine.rsa.pub
-rm /tmp/typesense-alpine.rsa.pub
+(
+  set -eu
+  KEY_FILE=$(mktemp)
+  trap 'rm -f "$KEY_FILE"' EXIT
+  curl --fail --location "$BASE/typesense-alpine.rsa.pub" -o "$KEY_FILE"
+  printf '%s  %s\n' "$KEY_SHA256" "$KEY_FILE" | sha256sum -c -
+  install -m 0644 "$KEY_FILE" /etc/apk/keys/typesense-alpine.rsa.pub
+)
 ```
 
 Add the release's index as a tagged repository and pin both package versions:
