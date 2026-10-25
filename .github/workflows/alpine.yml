@@ -61,7 +61,8 @@ jobs:
           TYPESENSE_VERSION: ${{ steps.version.outputs.upstream }}
           TYPESENSE_TARGET: typesense-server
         run: |
-          mkdir -p "$RUNNER_TEMP/typesense-alpine-cache"
+          # Keep dist owned by the runner when the root build container writes its binary.
+          mkdir -p dist "$RUNNER_TEMP/typesense-alpine-cache"
           # Bazel requires its output root to be owned by the build user.
           sudo chown -R 0:0 "$RUNNER_TEMP/typesense-alpine-cache"
           docker run --rm --cpus=4 --memory=14g --memory-swap=14g \
