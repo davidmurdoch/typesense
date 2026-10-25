@@ -113,6 +113,11 @@ jobs:
             openssl genrsa -out "$key" 4096
           fi
           openssl pkey -in "$key" -check -noout
+          if [ "$IS_RELEASE" = true ]; then
+            openssl pkey -in "$key" -pubout -out "$key.pub"
+            (cd "$RUNNER_TEMP/typesense-apk-signing" && \
+              sha256sum --check "$GITHUB_WORKSPACE/packaging/alpine/signing-key.sha256")
+          fi
 
       - name: Package tested binary
         env:

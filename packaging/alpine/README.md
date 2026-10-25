@@ -28,16 +28,17 @@ disposable signing key. Published revisions start at one and are never replaced.
 Run the installation commands as root. Replace the example release/version when
 selecting another release. The release must have completed publication first.
 
-Provision the signing public key once. Obtain its approved SHA-256 fingerprint
-from the release maintainer through your deployment configuration; a checksum
-downloaded beside an unfamiliar key does not establish that key's identity.
+Provision the signing public key once. The release signing key's approved SHA-256
+fingerprint is recorded in [signing-key.sha256](signing-key.sha256) and used below.
+Keep this fingerprint in your deployment configuration; a checksum downloaded
+beside an unfamiliar key does not establish that key's identity.
 
 ```sh
 apk add ca-certificates curl
 REPOSITORY=davidmurdoch/typesense
 RELEASE=v30.2-alpine.1
 BASE="https://github.com/$REPOSITORY/releases/download/$RELEASE"
-KEY_SHA256='<approved SHA-256 fingerprint of typesense-alpine.rsa.pub>'
+KEY_SHA256='3425df422947a4cd24b688c5b69955d86107b442a30fc2de823c5e0a699f5ed6'
 
 (
   set -eu
@@ -125,7 +126,15 @@ and matching configuration for recovery.
 
 ## Configure release signing once
 
-A repository maintainer creates and retains a signing key outside the checkout:
+The current workflow expects the complete private PEM key in the **repository
+Actions secret** `APK_SIGNING_KEY`. It derives the public key and checks it against
+`signing-key.sha256` before signing a release; a missing or different key fails
+the build. Environment secrets require configuring an environment on the job.
+Branch and PR builds continue to use disposable keys.
+
+For initial setup on a new fork, a repository maintainer creates and retains a
+signing key outside the checkout. If a signing key already exists, retain it
+rather than generating a replacement:
 
 ```sh
 KEY_DIR="$HOME/.config/typesense-release"
@@ -138,8 +147,10 @@ gh secret set APK_SIGNING_KEY --repo davidmurdoch/typesense < "$KEY_DIR/typesens
 
 `APK_SIGNING_KEY` contains the complete PEM private key. Retain a secure backup
 and use the same key across releases. Provision the public key and its fingerprint
-to VM administrators. A key rotation requires distributing the new trusted public
-key before consuming releases signed by it. Never commit a private key.
+to VM administrators. For an intentional key rotation, update `signing-key.sha256`
+and the fingerprint in the installation commands through review, and distribute
+the new trusted public key before consuming releases signed by it. Never commit
+a private key.
 
 Enable [immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
 in the repository settings to lock the assets and tag on publication. The
