@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+getent group typesense >/dev/null || addgroup -S typesense
+getent passwd typesense >/dev/null || adduser -S -D -H -h /var/lib/typesense \
+    -s /sbin/nologin -G typesense -g Typesense typesense

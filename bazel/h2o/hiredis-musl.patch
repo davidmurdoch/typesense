@@ -1,0 +1,37 @@
+diff --git a/deps/hiredis/hiredis.h b/deps/hiredis/hiredis.h
+--- deps/hiredis/hiredis.h
++++ deps/hiredis/hiredis.h
+@@ -83,7 +83,7 @@
+ /* strerror_r has two completely different prototypes and behaviors
+  * depending on system issues, so we need to operate on the error buffer
+  * differently depending on which strerror_r we're using. */
+-#ifndef _GNU_SOURCE
++#if !defined(__GLIBC__) || !defined(_GNU_SOURCE)
+ /* "regular" POSIX strerror_r that does the right thing. */
+ #define __redis_strerror_r(errno, buf, len)                                    \
+     do {                                                                       \
+
+diff --git a/lib/common/memory.c b/lib/common/memory.c
+--- lib/common/memory.c
++++ lib/common/memory.c
+@@ -603,7 +603,7 @@
+ 
+ char *h2o_strerror_r(int err, char *buf, size_t len)
+ {
+-#ifndef _GNU_SOURCE
++#if !defined(__GLIBC__) || !defined(_GNU_SOURCE)
+     strerror_r(err, buf, len);
+     return buf;
+ #else
+
+diff --git a/include/h2o/socket.h b/include/h2o/socket.h
+--- include/h2o/socket.h
++++ include/h2o/socket.h
+@@ -29,6 +29,7 @@
+ #include <stdint.h>
+ #include <sys/socket.h>
+ #ifdef __linux__
++#include <time.h>
+ #include <linux/errqueue.h>
+ #endif
+ #include <openssl/ssl.h>

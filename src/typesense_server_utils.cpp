@@ -7,7 +7,6 @@
 #include <braft/raft.h>
 #include <raft_server.h>
 #include <fstream>
-#include <execinfo.h>
 #include <http_client.h>
 
 #include <arpa/inet.h>

@@ -1,0 +1,2 @@
+# Set the API key and server options in the referenced INI file.
+typesense_config="/etc/typesense/typesense-server.ini"

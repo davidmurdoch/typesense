@@ -1,0 +1,33 @@
+diff --git a/operators/base64.h b/operators/base64.h
+--- operators/base64.h
++++ operators/base64.h
+@@ -2,6 +2,7 @@
+ // Licensed under the MIT License.
+ // Freely inspired from https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64
+ #pragma once
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff --git a/operators/string_utils_onnx.h b/operators/string_utils_onnx.h
+--- operators/string_utils_onnx.h
++++ operators/string_utils_onnx.h
+@@ -1,6 +1,7 @@
+ // Copyright (c) Microsoft Corporation. All rights reserved.
+ // Licensed under the MIT License.
+ #pragma once
++#include <cstdint>
+ #include <iostream>
+ #include <sstream>
+ #include <vector>
+diff --git a/operators/tokenizer/bert_tokenizer.hpp b/operators/tokenizer/bert_tokenizer.hpp
+--- operators/tokenizer/bert_tokenizer.hpp
++++ operators/tokenizer/bert_tokenizer.hpp
+@@ -3,6 +3,7 @@
+ 
+ #pragma once
+ 
++#include <cstdint>
+ #include <memory>
+ #include <unordered_map>
+ #include <vector>

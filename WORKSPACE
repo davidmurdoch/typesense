@@ -37,23 +37,37 @@ git_repository(
     commit = "df31bf51f08ca6afa59ef3b4f3749bf20ebd1858",
     patches = [
         "//bazel/brpc:brpc.patch",
+        "//bazel/brpc:brpc-musl.patch",
     ],
     remote = "https://github.com/apache/brpc.git",
 )
 
 
 new_git_repository(
-    name="onnx_runtime",
-    branch= "rel-1.14.1",
+    name = "onnx_runtime",
     build_file = "//bazel:onnxruntime.BUILD",
-    remote= "https://github.com/microsoft/onnxruntime",
-    patches=["//bazel:onnx.patch"],
-    patch_cmds= ["git submodule sync && git submodule foreach  'git fetch --tags' && git submodule update --init --remote"]
+    commit = "c57cf374b67f72575546d7b4c69a1af4972e2b54",
+    patches = [
+        "//bazel:onnx.patch",
+        "//bazel:onnx-release-execinfo.patch",
+        "//bazel:onnx-eigen-checksum.patch",
+        "//bazel:onnx-gcc15-compat.patch",
+    ],
+    remote = "https://github.com/microsoft/onnxruntime",
+)
+
+new_git_repository(
+    name = "onnx_runtime_extensions_internal",
+    build_file = "//bazel:onnxruntime_extensions_internal.BUILD",
+    commit = "3859b3fd39fdb61761cfe8789e1f0c7d828a31e9",
+    patch_args = ["-p1"],
+    patches = ["//bazel:onnx-extensions-internal.patch"],
+    remote = "https://github.com/microsoft/onnxruntime-extensions",
 )
 
 new_git_repository(
     name="clip_tokenizer",
-    branch="master",
+    commit = "0ca1e2e2e7418108725eaa7fb93e029516ae63fa",
     remote="https://github.com/typesense/clip_tokenizer_cpp.git",
     build_file = "//bazel:clip_tokenizer.BUILD",
 )
@@ -63,14 +77,18 @@ new_git_repository(
     build_file = "//bazel:onnxruntime_extensions.BUILD",
     remote = "https://github.com/microsoft/onnxruntime-extensions",
     commit = "81e7799c69044c745239202085eb0a98f102937b",
-    patches=["//bazel:onnx_ext.patch"],
+    patches = [
+        "//bazel:onnx_ext.patch",
+        "//bazel:onnx-extensions-cstdint.patch",
+        "//bazel:onnx-extensions-namespace.patch",
+    ],
 )
 
 new_git_repository(
     name = "com_github_madler_zlib",
     build_file = "//bazel:zlib.BUILD",
     remote = "https://github.com/madler/zlib.git",
-    tag = "v1.2.12",
+    commit = "21767c654d31d2dccdde4330529775c6c5fd5389",
 )
 
 # new_git_repository(
@@ -83,9 +101,9 @@ new_git_repository(
 new_git_repository(
     name = "sentencepiece",
     build_file = "//bazel:sentencepiece.BUILD",
-    tag = "v0.1.98",
+    commit = "518c57c335534d495d40d95d70199e28b4c8ce2a",
     remote = "https://github.com/google/sentencepiece",
-    patches = ["//bazel:sentencepiece.patch"],
+    patches = ["//bazel:sentencepiece.patch", "//bazel:sentencepiece-cstdint.patch"],
     patch_args = ["-p1"]
 )
 
@@ -130,7 +148,7 @@ git_repository(
     repo_mapping = {
         "@zlib": "@com_github_madler_zlib",
     },
-    tag = "v21.5",
+    commit = "ab840345966d0fa8e7100d771c92a73bfbadd25c",
 )
 
 http_archive(
@@ -206,9 +224,11 @@ http_archive(
 
 new_git_repository(
     name = "rocksdb",
+    patches = ["//bazel:rocksdb-cstdint.patch", "//bazel:rocksdb-ccache.patch"],
+    patch_args = ["-p1"],
     build_file = "//bazel:rocksdb.BUILD",
     remote = "https://github.com/facebook/rocksdb.git",
-    tag = "v7.8.3",
+    commit = "bf2c335184de16a3cc1787fa97ef9f22f7114238",
 )
 
 http_archive(
@@ -223,7 +243,7 @@ new_git_repository(
     name = "h2o",
     build_file = "//bazel/h2o:BUILD",
     commit = "1491a703195790278091fd7aee547fbba78e89af",
-    patches = ["//bazel/h2o:h2o_1491a703195790278091fd7aee547fbba78e89af.patch"],
+    patches = ["//bazel/h2o:h2o_1491a703195790278091fd7aee547fbba78e89af.patch", "//bazel/h2o:hiredis-musl.patch"],
     remote = "https://github.com/h2o/h2o.git",
 )
 
@@ -256,13 +276,13 @@ new_git_repository(
     build_file = "//bazel/icu:BUILD",
     patches = ["//bazel/icu:icu.patch"],
     remote = "https://github.com/typesense/icu.git",
-    tag = "release-71-1-patch",
+    commit = "8063ea337490a0a216c30d58c2beb7315059eb7c",
 )
 
 git_repository(
     name = "com_google_googletest",
     remote = "https://github.com/google/googletest.git",
-    tag = "release-1.12.1",
+    commit = "58d77fa8070e8cec2dc1ed015d66b454c8d78850",
 )
 
 new_git_repository(
@@ -312,6 +332,8 @@ http_file(
 
 http_archive(
     name = "elfutils",
+    patches = ["//bazel:elfutils-musl-macros.patch"],
+    patch_args = ["-p1"],
     build_file = "//bazel:elfutils.BUILD",
     sha256 = "df76db71366d1d708365fc7a6c60ca48398f14367eb2b8954efc8897147ad871",
     strip_prefix = "elfutils-0.191",
@@ -341,7 +363,7 @@ register_detected_cuda_toolchains()
 new_git_repository(
     name= "snowball",
     build_file = "//bazel:snowball.BUILD",
-    branch = "master",
+    commit = "6389c79f91cd67ed2de3ebdcf84ec8c2d2d23c11",
     remote = "https://github.com/snowballstem/snowball.git"
 )
 

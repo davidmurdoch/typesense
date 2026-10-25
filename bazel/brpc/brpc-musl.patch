@@ -1,0 +1,485 @@
+diff --git BUILD.bazel BUILD.bazel
+index c53f83b..05dbc72 100644
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -20,6 +20,11 @@ licenses(["notice"])  # Apache v2
+ 
+ exports_files(["LICENSE"])
+ 
++config_setting(
++    name = "with_libunwind",
++    define_values = {"BRPC_WITH_LIBUNWIND": "true"},
++)
++
+ COPTS = [
+     "-DBTHREAD_USE_FAST_PTHREAD_MUTEX",
+     "-D__const__=__unused__",
+@@ -45,8 +50,12 @@ COPTS = [
+ }) + select({
+     "//bazel/config:brpc_with_rdma": ["-DBRPC_WITH_RDMA=1"],
+     "//conditions:default": [""],
++}) + select({
++    ":with_libunwind": ["-DBRPC_USE_LIBUNWIND"],
++    "//conditions:default": [],
+ })
+ 
++
+ LINKOPTS = [
+     "-pthread",
+     "-ldl",
+@@ -77,8 +86,12 @@ LINKOPTS = [
+         "-libverbs",
+     ],
+     "//conditions:default": [],
++}) + select({
++    ":with_libunwind": ["-lunwind"],
++    "//conditions:default": [],
+ })
+ 
++
+ genrule(
+     name = "config_h",
+     outs = [
+diff --git src/brpc/builtin/rpcz_service.cpp src/brpc/builtin/rpcz_service.cpp
+index 3625c06..ad76c63 100644
+--- src/brpc/builtin/rpcz_service.cpp
++++ src/brpc/builtin/rpcz_service.cpp
+@@ -447,7 +447,7 @@ static int64_t ParseDateTime(const std::string& time_str) {
+             microseconds = 999999;
+         }
+     }
+-    return timelocal(&timeinfo) * 1000000L + microseconds;
++    return mktime(&timeinfo) * 1000000L + microseconds;
+ }
+ 
+ static bool ParseUint64(const std::string* str, uint64_t* val) {
+diff --git src/brpc/global.cpp src/brpc/global.cpp
+index fbd669e..ddbf803 100644
+--- src/brpc/global.cpp
++++ src/brpc/global.cpp
+@@ -87,7 +87,7 @@
+ #include "brpc/server.h"
+ #include "brpc/trackme.h"             // TrackMe
+ #include "brpc/details/usercode_backup_pool.h"
+-#if defined(OS_LINUX)
++#if defined(__GLIBC__)
+ #include <malloc.h>                   // malloc_trim
+ #endif
+ #include "butil/fd_guard.h"
+@@ -282,8 +282,8 @@ static void* GlobalUpdate(void*) {
+             if (MallocExtension_ReleaseFreeMemory != NULL) {
+                 MallocExtension_ReleaseFreeMemory();
+             } else {
+-#if defined(OS_LINUX)
+-                // GNU specific.
++#if defined(__GLIBC__)
++                // glibc-specific allocator optimization.
+                 malloc_trim(10 * 1024 * 1024/*leave 10M pad*/);
+ #endif
+             }
+diff --git src/bthread/bthread.h src/bthread/bthread.h
+index f91bc9a..bd2b00c 100644
+--- src/bthread/bthread.h
++++ src/bthread/bthread.h
+@@ -34,7 +34,9 @@
+ 
+ #include "bthread/id.h"
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ // Create bthread `fn(args)' with attributes `attr' and put the identifier into
+ // `tid'. Switch to the new thread and schedule old thread to run. Use this
+@@ -336,6 +338,8 @@ extern void* bthread_getspecific(bthread_key_t key);
+ // Return current bthread tag
+ extern bthread_tag_t bthread_self_tag(void);
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #endif  // BTHREAD_BTHREAD_H
+diff --git src/bthread/condition_variable.h src/bthread/condition_variable.h
+index c684cf6..c9ef0a6 100644
+--- src/bthread/condition_variable.h
++++ src/bthread/condition_variable.h
+@@ -25,7 +25,9 @@
+ #include "butil/time.h"
+ #include "bthread/mutex.h"
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ extern int bthread_cond_init(bthread_cond_t* __restrict cond,
+                              const bthread_condattr_t* __restrict cond_attr);
+ extern int bthread_cond_destroy(bthread_cond_t* cond);
+@@ -37,7 +39,9 @@ extern int bthread_cond_timedwait(
+     bthread_cond_t* __restrict cond,
+     bthread_mutex_t* __restrict mutex,
+     const struct timespec* __restrict abstime);
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ namespace bthread {
+ 
+diff --git src/bthread/errno.h src/bthread/errno.h
+index 2045e76..b576aaf 100644
+--- src/bthread/errno.h
++++ src/bthread/errno.h
+@@ -25,7 +25,9 @@
+ #include <errno.h>                    // errno
+ #include "butil/errno.h"               // berror(), DEFINE_BTHREAD_ERRNO
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ extern int *bthread_errno_location();
+ 
+@@ -37,6 +39,8 @@ extern int *bthread_errno_location();
+ // List errno used throughout bthread
+ extern const int ESTOP;
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #endif  //BTHREAD_ERRNO_H
+diff --git src/bthread/id.h src/bthread/id.h
+index f9fef65..5add134 100644
+--- src/bthread/id.h
++++ src/bthread/id.h
+@@ -25,7 +25,9 @@
+ #include "butil/macros.h"              // BAIDU_SYMBOLSTR
+ #include "bthread/types.h"
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ // ----------------------------------------------------------------------
+ // Functions to create 64-bit identifiers that can be attached with data
+@@ -161,7 +163,9 @@ int bthread_id_list_reset_pthreadsafe(
+ int bthread_id_list_reset_bthreadsafe(
+     bthread_id_list_t* list, int error_code, bthread_mutex_t* mutex);
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #if defined(__cplusplus)
+ // cpp specific API, with an extra `error_text' so that error information
+diff --git src/bthread/mutex.cpp src/bthread/mutex.cpp
+index b4008fd..a42beb0 100644
+--- src/bthread/mutex.cpp
++++ src/bthread/mutex.cpp
+@@ -20,7 +20,11 @@
+ // Date: Sun Aug  3 12:46:15 CST 2014
+ 
+ #include <pthread.h>
++#if defined(BRPC_USE_LIBUNWIND)
++#include <libunwind.h>
++#else
+ #include <execinfo.h>
++#endif
+ #include <dlfcn.h>                               // dlsym
+ #include <fcntl.h>                               // O_RDONLY
+ #include "butil/atomicops.h"
+@@ -53,7 +57,11 @@ namespace bthread {
+ void* dummy_buf[4];
+ const int ALLOW_UNUSED dummy_bt = GetStackTrace
+     ? GetStackTrace(dummy_buf, arraysize(dummy_buf), 0)
++#if defined(BRPC_USE_LIBUNWIND)
++    : unw_backtrace(dummy_buf, arraysize(dummy_buf));
++#else
+     : backtrace(dummy_buf, arraysize(dummy_buf));
++#endif
+ 
+ // For controlling contentions collected per second.
+ static bvar::CollectorSpeedLimit g_cp_sl = BVAR_COLLECTOR_SPEED_LIMIT_INITIALIZER;
+@@ -533,7 +541,11 @@ void submit_contention(const bthread_contention_site_t& csite, int64_t now_ns) {
+     sc->count = bvar::COLLECTOR_SAMPLING_BASE / (double)csite.sampling_range;
+     sc->nframes = GetStackTrace
+         ? GetStackTrace(sc->stack, arraysize(sc->stack), 0)
++#if defined(BRPC_USE_LIBUNWIND)
++        : unw_backtrace(sc->stack, arraysize(sc->stack)); // may lock
++#else
+         : backtrace(sc->stack, arraysize(sc->stack)); // may lock
++#endif
+     sc->submit(now_ns / 1000);  // may lock
+     tls_inside_lock = false;
+ }
+diff --git src/bthread/mutex.h src/bthread/mutex.h
+index 242a620..7f48c05 100644
+--- src/bthread/mutex.h
++++ src/bthread/mutex.h
+@@ -26,7 +26,9 @@
+ #include "butil/scoped_lock.h"
+ #include "bvar/utils/lock_timer.h"
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ extern int bthread_mutex_init(bthread_mutex_t* __restrict mutex,
+                               const bthread_mutexattr_t* __restrict mutex_attr);
+ extern int bthread_mutex_destroy(bthread_mutex_t* mutex);
+@@ -35,7 +37,9 @@ extern int bthread_mutex_lock(bthread_mutex_t* mutex);
+ extern int bthread_mutex_timedlock(bthread_mutex_t* __restrict mutex,
+                                    const struct timespec* __restrict abstime);
+ extern int bthread_mutex_unlock(bthread_mutex_t* mutex);
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ namespace bthread {
+ 
+diff --git src/bthread/stack.cpp src/bthread/stack.cpp
+index c312ef8..71f2bc7 100644
+--- src/bthread/stack.cpp
++++ src/bthread/stack.cpp
+@@ -54,10 +54,10 @@ static bvar::PassiveStatus<int64_t> bvar_stack_count(
+     "bthread_stack_count", get_stack_count, NULL);
+ 
+ int allocate_stack_storage(StackStorage* s, int stacksize_in, int guardsize_in) {
+-    const static int PAGESIZE = getpagesize();
+-    const int PAGESIZE_M1 = PAGESIZE - 1;
+-    const int MIN_STACKSIZE = PAGESIZE * 2;
+-    const int MIN_GUARDSIZE = PAGESIZE;
++    const static int page_size = getpagesize();
++    const int PAGESIZE_M1 = page_size - 1;
++    const int MIN_STACKSIZE = page_size * 2;
++    const int MIN_GUARDSIZE = page_size;
+ 
+     // Align stacksize
+     const int stacksize =
+@@ -104,7 +104,7 @@ int allocate_stack_storage(StackStorage* s, int stacksize_in, int guardsize_in)
+         void* aligned_mem = (void*)(((intptr_t)mem + PAGESIZE_M1) & ~PAGESIZE_M1);
+         if (aligned_mem != mem) {
+             LOG_ONCE(ERROR) << "addr=" << mem << " returned by mmap is not "
+-                "aligned by pagesize=" << PAGESIZE;
++                "aligned by pagesize=" << page_size;
+         }
+         const int offset = (char*)aligned_mem - (char*)mem;
+         if (guardsize <= offset ||
+diff --git src/bthread/unstable.h src/bthread/unstable.h
+index 5836f60..94ea99e 100644
+--- src/bthread/unstable.h
++++ src/bthread/unstable.h
+@@ -34,7 +34,9 @@
+ //   functions if you're not ready to change your code according to newer
+ //   versions of bthread.
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ // Schedule tasks created by BTHREAD_NOSIGNAL
+ extern void bthread_flush();
+@@ -128,6 +130,8 @@ extern void bthread_keytable_pool_reserve(
+     bthread_keytable_pool_t* pool, size_t nfree,
+     bthread_key_t key, void* ctor(const void* args), const void* args);
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #endif  // BTHREAD_UNSTABLE_H
+diff --git src/butil/compat.h src/butil/compat.h
+index d75e163..e62f996 100644
+--- src/butil/compat.h
++++ src/butil/compat.h
+@@ -21,6 +21,7 @@
+ 
+ #include "butil/build_config.h"
+ #include <pthread.h>
++#include <stdint.h>
+ 
+ #if defined(OS_MACOSX)
+ 
+@@ -29,7 +30,9 @@
+ #include <dispatch/dispatch.h>    // dispatch_semaphore
+ #include <errno.h>                // EINVAL
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ // Implement pthread_spinlock_t for MAC.
+ struct pthread_spinlock_t {
+@@ -60,7 +63,9 @@ inline int pthread_spin_unlock(pthread_spinlock_t *__lock) {
+     return dispatch_semaphore_signal(__lock->sem);
+ }
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #elif defined(OS_LINUX)
+ 
+@@ -72,7 +77,9 @@ __END_DECLS
+ 
+ #endif // defined(OS_MACOSX)
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ inline uint64_t pthread_numeric_id() {
+ #if defined(OS_MACOSX)
+@@ -86,6 +93,8 @@ inline uint64_t pthread_numeric_id() {
+ #endif
+ }
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #endif // BUTIL_COMPAT_H
+diff --git src/butil/debug/stack_trace_posix.cc src/butil/debug/stack_trace_posix.cc
+index b96f1c8..c6f867c 100644
+--- src/butil/debug/stack_trace_posix.cc
++++ src/butil/debug/stack_trace_posix.cc
+@@ -22,7 +22,9 @@
+ #if defined(__GLIBCXX__)
+ #include <cxxabi.h>
+ #endif
+-#if !defined(__UCLIBC__)
++#if defined(BRPC_USE_LIBUNWIND)
++#include <libunwind.h>
++#elif !defined(__UCLIBC__)
+ #include <execinfo.h>
+ #endif
+ 
+@@ -756,7 +758,11 @@ StackTrace::StackTrace() {
+ #if !defined(__UCLIBC__)
+       // Though the backtrace API man page does not list any possible negative
+       // return values, we take no chance.
++#if defined(BRPC_USE_LIBUNWIND)
++      count_ = butil::saturated_cast<size_t>(unw_backtrace(trace_, arraysize(trace_)));
++#else
+       count_ = butil::saturated_cast<size_t>(backtrace(trace_, arraysize(trace_)));
++#endif
+ #else
+       count_ = 0;
+ #endif
+diff --git src/butil/endpoint.cpp src/butil/endpoint.cpp
+index a696aa4..ff0b9bc 100644
+--- src/butil/endpoint.cpp
++++ src/butil/endpoint.cpp
+@@ -42,12 +42,16 @@ DEFINE_bool(reuse_addr, true, "Enable SO_REUSEADDR for all listened sockets");
+ 
+ DEFINE_bool(reuse_uds_path, false, "remove unix domain socket file before listen to it");
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
+ int BAIDU_WEAK bthread_connect(
+     int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen) {
+     return connect(sockfd, serv_addr, addrlen);
+ }
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ 
+ #include "details/extended_endpoint.hpp"
+ 
+diff --git src/butil/errno.cpp src/butil/errno.cpp
+index 9b964e1..afe3adf 100644
+--- src/butil/errno.cpp
++++ src/butil/errno.cpp
+@@ -36,6 +36,28 @@ static pthread_mutex_t modify_desc_mutex = PTHREAD_MUTEX_INITIALIZER;
+ const size_t ERROR_BUFSIZE = 64;
+ __thread char tls_error_buf[ERROR_BUFSIZE];
+ 
++// Normalize the GNU and POSIX strerror_r APIs, including libc's unknown-error text.
++static const char* SystemErrorDescription(int error_code) {
++#if !defined(__GLIBC__) || !defined(_GNU_SOURCE)
++    const int rc = strerror_r(error_code, tls_error_buf, ERROR_BUFSIZE);
++    if (rc != 0 && rc != ERANGE) {
++        return NULL;
++    }
++    char unknown_error[ERROR_BUFSIZE];
++    const int saved_errno = errno;
++    const int unknown_rc = strerror_r(-1, unknown_error, sizeof(unknown_error));
++    errno = saved_errno;
++    if (error_code != 0 && unknown_rc == 0 &&
++        strcmp(tls_error_buf, unknown_error) == 0) {
++        return NULL;
++    }
++    return tls_error_buf;
++#else
++    const char* desc = strerror_r(error_code, tls_error_buf, ERROR_BUFSIZE);
++    return desc && strncmp(desc, "Unknown error", 13) != 0 ? desc : NULL;
++#endif
++}
++
+ int DescribeCustomizedErrno(
+     int error_code, const char* error_name, const char* description) {
+     BAIDU_SCOPED_LOCK(modify_desc_mutex);
+@@ -52,13 +74,8 @@ int DescribeCustomizedErrno(
+             return -1;
+         }
+     } else {
+-#if defined(OS_MACOSX)
+-        const int rc = strerror_r(error_code, tls_error_buf, ERROR_BUFSIZE);
+-        if (rc != EINVAL)
+-#else
+-        desc = strerror_r(error_code, tls_error_buf, ERROR_BUFSIZE);
+-        if (desc && strncmp(desc, "Unknown error", 13) != 0)
+-#endif
++        desc = SystemErrorDescription(error_code);
++        if (desc)
+         {
+             fprintf(stderr, "WARNING: Fail to define %s(%d) which is already defined as `%s'",
+                     error_name, error_code, desc);
+@@ -79,17 +96,10 @@ const char* berror(int error_code) {
+         if (s) {
+             return s;
+         }
+-#if defined(OS_MACOSX)
+-        const int rc = strerror_r(error_code, butil::tls_error_buf, butil::ERROR_BUFSIZE);
+-        if (rc == 0 || rc == ERANGE/*bufsize is not long enough*/) {
+-            return butil::tls_error_buf;
+-        }
+-#else
+-        s = strerror_r(error_code, butil::tls_error_buf, butil::ERROR_BUFSIZE);
++        s = butil::SystemErrorDescription(error_code);
+         if (s) {
+             return s;
+         }
+-#endif
+     }
+     snprintf(butil::tls_error_buf, butil::ERROR_BUFSIZE,
+              "Unknown error %d", error_code);
+diff --git src/butil/time.cpp src/butil/time.cpp
+index 2c726d9..9cea856 100644
+--- src/butil/time.cpp
++++ src/butil/time.cpp
+@@ -26,7 +26,6 @@
+ #define _GNU_SOURCE
+ #endif
+ #include <string.h>                          // memmem
+-#undef _GNU_SOURCE
+ 
+ #include "butil/time.h"
+ 

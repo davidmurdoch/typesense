@@ -196,6 +196,7 @@
 #endif
 
 #include <cxxabi.h>
+#include <dlfcn.h>
 #include <fcntl.h>
 #ifdef __ANDROID__
 //		Old Android API levels define _Unwind_Ptr in both link.h and

@@ -6,6 +6,10 @@
 #include <openssl/pem.h>
 #include <ctime>
 
+#ifdef TEST_BUILD
+#include "../test/mock_remote_embedder.h"
+#endif
+
 Option<bool> RemoteEmbedder::validate_string_properties(const nlohmann::json& model_config, const std::vector<std::string>& properties) {
     for(auto& property : properties) {
         if(model_config.count(property) == 0 || !model_config[property].is_string()) {
@@ -27,6 +31,14 @@ long RemoteEmbedder::call_remote_api(const std::string& method, const std::strin
                                      std::string& res_body,
                                      std::map<std::string, std::string>& res_headers,
                                      std::unordered_map<std::string, std::string>& req_headers) {
+
+#ifdef TEST_BUILD
+    if(!MockRemoteEmbedder::response.empty()) {
+        res_body = MockRemoteEmbedder::response;
+        res_headers.clear();
+        return 200;
+    }
+#endif
 
     if(raft_server == nullptr || raft_server->get_leader_url().empty()) {
         // call proxy's internal send() directly

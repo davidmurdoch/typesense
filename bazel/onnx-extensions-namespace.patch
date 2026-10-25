@@ -1,0 +1,182 @@
+diff --git a/operators/base64.h b/operators/base64.h
+--- operators/base64.h
++++ operators/base64.h
+@@ -6,5 +6,9 @@
+ #include <string>
+ #include <vector>
+ 
++namespace ort_extensions {
++
+ bool base64_encode(const std::vector<uint8_t>& input, std::string& encoded);
+ bool base64_decode(const std::string& encoded, std::vector<uint8_t>& raw);
++
++}  // namespace ort_extensions
+diff --git a/operators/base64.cc b/operators/base64.cc
+--- operators/base64.cc
++++ operators/base64.cc
+@@ -2,6 +2,8 @@
+ // Licensed under the MIT License.
+ #include "base64.h"
+ #include <stdexcept>
++
++namespace ort_extensions {
+ 
+ const static std::string encodeLookup("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+ const static char padCharacter = '=';
+@@ -91,3 +93,5 @@
+   }
+   return true;
+ }
++
++}  // namespace ort_extensions
+diff --git a/operators/string_utils_onnx.h b/operators/string_utils_onnx.h
+--- operators/string_utils_onnx.h
++++ operators/string_utils_onnx.h
+@@ -5,6 +5,8 @@
+ #include <iostream>
+ #include <sstream>
+ #include <vector>
++
++namespace ort_extensions {
+ 
+ template <typename T>
+ inline void MakeStringInternal(std::ostringstream& ss, const T& t) noexcept {
+@@ -71,3 +73,5 @@
+ }
+ 
+ uint64_t Hash64Fast(const char* data, size_t n);
++
++}  // namespace ort_extensions
+diff --git a/operators/string_utils_onnx.cc b/operators/string_utils_onnx.cc
+--- operators/string_utils_onnx.cc
++++ operators/string_utils_onnx.cc
+@@ -3,6 +3,8 @@
+ #endif
+ 
+ #include "string_utils_onnx.h"
++
++namespace ort_extensions {
+ 
+ std::vector<std::string_view> SplitString(const std::string_view& str, const std::string_view& seps, bool remove_empty_entries) {
+   std::vector<std::string_view> result;
+@@ -192,3 +194,5 @@
+ 
+ 
+ #endif  // ENABLE_TF_STRING
++
++}  // namespace ort_extensions
+diff --git a/operators/ustring.h b/operators/ustring.h
+--- operators/ustring.h
++++ operators/ustring.h
+@@ -7,6 +7,8 @@
+ #include <functional>
+ 
+ // Wrap u32string with ustring, in case we will use other implementation in the future
++namespace ort_extensions {
++
+ class ustring : public std::u32string {
+  public:
+   ustring();
+@@ -34,10 +36,12 @@
+   using utf8_converter = std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>;
+ };
+ 
++}  // namespace ort_extensions
++
+ namespace std {
+ template <>
+-struct hash<ustring> {
+-  size_t operator()(const ustring& __str) const noexcept {
++struct hash<ort_extensions::ustring> {
++  size_t operator()(const ort_extensions::ustring& __str) const noexcept {
+     hash<u32string> standard_hash;
+     return standard_hash(static_cast<u32string>(__str));
+   }
+diff --git a/operators/ustring.cc b/operators/ustring.cc
+--- operators/ustring.cc
++++ operators/ustring.cc
+@@ -2,6 +2,8 @@
+ // Licensed under the MIT License.
+ #include <iostream>
+ #include "ustring.h"
++
++namespace ort_extensions {
+ 
+ ustring::ustring() : std::u32string() {
+ }
+@@ -66,3 +68,4 @@
+   return str_cvt.to_bytes(*this);
+ }
+ 
++}  // namespace ort_extensions
+diff --git a/operators/tokenizer/basic_tokenizer.hpp b/operators/tokenizer/basic_tokenizer.hpp
+--- operators/tokenizer/basic_tokenizer.hpp
++++ operators/tokenizer/basic_tokenizer.hpp
+@@ -5,6 +5,8 @@
+ 
+ #include "string_utils_onnx.h"
+ #include "ustring.h"
++
++namespace ort_extensions {
+ 
+ class BasicTokenizer {
+  public:
+@@ -18,3 +20,5 @@
+   bool tokenize_punctuation_;
+   bool remove_control_chars_;
+ };
++
++}  // namespace ort_extensions
+diff --git a/operators/tokenizer/basic_tokenizer.cc b/operators/tokenizer/basic_tokenizer.cc
+--- operators/tokenizer/basic_tokenizer.cc
++++ operators/tokenizer/basic_tokenizer.cc
+@@ -7,6 +7,8 @@
+ #include <locale>
+ #include <codecvt>
+ #include <algorithm>
++
++namespace ort_extensions {
+ 
+ BasicTokenizer::BasicTokenizer(bool do_lower_case, bool tokenize_chinese_chars, bool strip_accents, bool tokenize_punctuation, bool remove_control_chars):
+     do_lower_case_(do_lower_case),
+@@ -80,3 +82,5 @@
+   push_current_token_and_clear();
+   return result;
+ }
++
++}  // namespace ort_extensions
+diff --git a/operators/tokenizer/bert_tokenizer.hpp b/operators/tokenizer/bert_tokenizer.hpp
+--- operators/tokenizer/bert_tokenizer.hpp
++++ operators/tokenizer/bert_tokenizer.hpp
+@@ -10,6 +10,8 @@
+ #include "ustring.h"
+ #include "string_utils_onnx.h"
+ #include "basic_tokenizer.hpp"
++
++namespace ort_extensions {
+ 
+ class BertTokenizerVocab final {
+  public:
+@@ -89,4 +91,4 @@
+   std::unique_ptr<WordpieceTokenizer> wordpiece_tokenizer_;
+ };
+ 
+-
++}  // namespace ort_extensions
+diff --git a/operators/tokenizer/bert_tokenizer.cc b/operators/tokenizer/bert_tokenizer.cc
+--- operators/tokenizer/bert_tokenizer.cc
++++ operators/tokenizer/bert_tokenizer.cc
+@@ -1,6 +1,8 @@
+ #include "bert_tokenizer.hpp"
+ 
+ #include <utility>
++
++namespace ort_extensions {
+ 
+ BertTokenizerVocab::BertTokenizerVocab(std::string_view vocab) : raw_vocab_(vocab) {
+   auto tokens = SplitString(raw_vocab_, "\r\n", true);
+@@ -277,3 +279,4 @@
+   }
+ }
+ 
++}  // namespace ort_extensions
