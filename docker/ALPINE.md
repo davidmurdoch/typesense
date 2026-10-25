@@ -16,6 +16,8 @@ The builder pins Alpine, GCC, CMake, Perl and the JDK. Bazel 6.2.0 is compiled f
 Build Typesense and run the portability regression tests:
 
 ```sh
+# Create the output directory on the host so it remains writable after the build.
+mkdir -p dist
 docker volume create typesense-alpine-cache
 docker run --rm --cpus=4 --memory=14g --memory-swap=14g \
   --mount "type=bind,src=$PWD,dst=/src" \
