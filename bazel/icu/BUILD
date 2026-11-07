@@ -9,7 +9,7 @@ filegroup(
 )
 
 configure_make(
-    name = "bundled_icu",
+    name = "icu",
     args = ["-j8"],
     configure_command = "icu4c/source/runConfigureICU",
     configure_options = select({
@@ -27,14 +27,4 @@ configure_make(
         "libicudata.a",
         "libicuio.a",
     ],
-)
-
-
-alias(
-    name = "icu",
-    actual = select({
-        "@//bazel/config:musl": "@alpine_system//:icu",
-        "//conditions:default": ":bundled_icu",
-    }),
-    visibility = ["//visibility:public"],
 )

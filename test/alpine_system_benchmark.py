@@ -41,17 +41,10 @@ def download(url, path):
             out.write(chunk)
 
 
-def package_size(path):
-    with tarfile.open(path, "r:gz", ignore_zeros=True) as archive:
-        metadata = archive.extractfile(".PKGINFO").read().decode()
-    return int(next(line.split(" = ", 1)[1] for line in metadata.splitlines()
-                    if line.startswith("size = ")))
-
-
 def audit(binary, image):
     needed = command("readelf", "-dW", str(binary))
     required = ["libssl.so.3", "libcrypto.so.3", "libcurl.so.4", "libz.so.1",
-                "libstdc++.so.6", "libicuuc.so.78", "libicui18n.so.78"]
+                "libstdc++.so.6"]
     missing = [name for name in required if "[" + name + "]" not in needed]
     loaded = command("docker", "run", "--rm", "--entrypoint",
                      "/lib/ld-musl-x86_64.so.1", image, "--list", "/opt/typesense-server")
@@ -61,13 +54,16 @@ def audit(binary, image):
     symbols = command("nm", "--defined-only", "--extern-only", str(binary))
     anchors = {"inflate", "deflate", "crc32", "SSL_new", "OPENSSL_init_crypto",
                "curl_easy_init", "__cxa_throw", "_ZSt20__throw_length_errorPKc"}
-    embedded = [line.split()[-1] for line in symbols.splitlines() if line.split()
-                and (line.split()[-1] in anchors or "icu_71" in line.split()[-1]
-                     or "icudt71" in line.split()[-1])]
-    if missing or embedded:
-        raise RuntimeError("Shared linkage incomplete: " + json.dumps(
-            {"missing": missing, "embedded": embedded[:20]}))
-    return {"needed": required, "old_library_anchor_definitions": embedded}
+    embedded = [line.split()[-1] for line in symbols.splitlines()
+                if line.split() and line.split()[-1] in anchors]
+    bundled_icu = "icu_71" in symbols and "icudt71" in symbols
+    shared_icu = [line.strip() for line in needed.splitlines() if "NEEDED" in line and "libicu" in line]
+    if missing or embedded or not bundled_icu or shared_icu:
+        raise RuntimeError("Library linkage incomplete: " + json.dumps(
+            {"missing": missing, "embedded": embedded[:20],
+             "bundled_icu": bundled_icu, "unexpected_shared_icu": shared_icu}))
+    return {"needed": required, "embedded_shared_library_definitions": embedded,
+            "icu": "bundled 71.1"}
 
 
 class Client:
@@ -218,7 +214,7 @@ def main():
               "linkage": audit(Path("dist/typesense-server"), image),
               "runtime_packages": command("docker", "run", "--rm", "--entrypoint", "apk", image,
                   "info", "-v", "libcrypto3", "libssl3", "libcurl", "zlib",
-                  "libstdc++", "libgcc", "icu-libs", "icu-data-full").splitlines(),
+                  "libstdc++", "libgcc").splitlines(),
               "runs": []}
     volumes, names = [], []
     try:
@@ -246,24 +242,14 @@ def main():
             stop(name)
         baseline_apk = root / "baseline.apk"
         download(RELEASE + "typesense-30.2-r3.apk", baseline_apk)
-        data_packages = {}
-        for kind in ["en", "full"]:
-            path = root / ("icu-data-" + kind + ".apk")
-            download("https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/icu-data-"
-                     + kind + "-78.1-r0.apk", path)
-            data_packages[kind] = {"installed_bytes": package_size(path),
-                                   "apk_bytes": path.stat().st_size}
         report["sizes"] = {"baseline_executable_bytes": len(binary),
                           "candidate_executable_bytes": Path("dist/typesense-server").stat().st_size,
                           "baseline_apk_bytes": baseline_apk.stat().st_size,
-                          "candidate_apk_bytes": Path(candidate_apk).stat().st_size,
-                          "icu_data": data_packages}
+                          "candidate_apk_bytes": Path(candidate_apk).stat().st_size}
         size = report["sizes"]
         report["net_installed_and_retained_package_delta_bytes"] = (
             size["candidate_executable_bytes"] - size["baseline_executable_bytes"]
-            + size["candidate_apk_bytes"] - size["baseline_apk_bytes"]
-            + data_packages["full"]["installed_bytes"] - data_packages["en"]["installed_bytes"]
-            + data_packages["full"]["apk_bytes"] - data_packages["en"]["apk_bytes"])
+            + size["candidate_apk_bytes"] - size["baseline_apk_bytes"])
         if not report["behavior_equal"] or not report["baseline_data_reopen"]["behavior_equal"]:
             raise RuntimeError("Baseline/candidate search behavior differs; inspect signatures")
     except Exception as error:

@@ -59,22 +59,24 @@ Both Dockerfiles accept the optional BuildKit secret `ca_bundle` (combined publi
 
 ## System-library experiment
 
-The Alpine build uses the installed OpenSSL, libcurl, zlib, ICU and GCC runtime.
-Other platforms retain the bundled dependencies. The builder pins the matching
-headers; runtime packages include full ICU data to preserve language support.
+The Alpine candidate uses the installed OpenSSL, libcurl, zlib and GCC runtime.
+ICU 71.1 and its full data stay bundled, preserving the production Unicode
+dependency. Other platforms retain their bundled dependencies. The builder
+pins the matching system headers.
 
 The Alpine workflow's optional compare_baseline input compares the candidate
 with published revision 3 on the same runner. It checks shared linkage, fixed
 synthetic food/locale queries and reopening baseline data, then reports startup,
-import, warm search, memory and executable/APK sizes. The footprint calculation
-also includes replacing the fleet's English-only ICU data with full data.
+import, warm search, memory and executable/APK sizes. The current candidate
+requires no additional ICU runtime packages; disk savings include the executable
+and retained APK.
 The experiment does not publish a release or change production.
 
 The trial pins OpenSSL 3.5.9 because Alpine no longer serves the 3.5.8 development
 package. Baseline and candidate timings use the same lab OS packages; these are
 experiment results, not approval of a new production package target.
 
-The [November 7 trial](https://github.com/davidmurdoch/typesense/actions/runs/42382842685)
+The earlier [all-five shared trial](https://github.com/davidmurdoch/typesense/actions/runs/42382842685)
 passed the native runtime/package checks, nine locale comparisons and reopening
 baseline-written data. With 1 CPU, 256 MiB and 5,000 synthetic foods, the two runs
 per build averaged 0.982 vs 0.994 ms search p50, 1.072 vs 1.084 ms p95 and 1,090
