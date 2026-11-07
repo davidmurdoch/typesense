@@ -101,6 +101,7 @@ config_setting(
 
 config_setting(
     name = "musl",
+    constraint_values = ["@platforms//os:linux"],
     define_values = {"libc": "musl"},
     visibility = ["//visibility:public"],
 )

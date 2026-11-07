@@ -31,6 +31,13 @@ rules_foreign_cc_dependencies(
     cmake_version="3.25.0",
     ninja_version="1.11.1")
 
+# Alpine uses the reviewed libraries installed by its native builder.
+new_local_repository(
+    name = "alpine_system",
+    path = "/usr",
+    build_file = "//bazel:alpine_system.BUILD",
+)
+
 # brpc and its dependencies
 git_repository(
     name = "com_github_brpc_brpc",

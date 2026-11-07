@@ -5,6 +5,12 @@ on:
     branches: ['**']
     tags: ['v*-alpine.*']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      compare_baseline:
+        description: Compare the published runtime and shared-library candidate on this runner
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -87,6 +93,9 @@ jobs:
           docker build -f docker/alpine.Dockerfile -t typesense-alpine-runtime:test dist
           bash test/alpine_smoke_test.sh typesense-alpine-runtime:test
 
+      - name: Check shared runtime linkage
+        run: python3 -B test/alpine_system_benchmark.py --audit typesense-alpine-runtime:test dist/typesense-server
+
       - name: Build APK packager
         uses: docker/build-push-action@v6
         with:
@@ -147,6 +156,19 @@ jobs:
           docker run --rm --cpus=1 --memory=512m --memory-swap=512m \
             --mount "type=bind,src=$PWD/dist/alpine-release,dst=/repo,readonly" \
             typesense-alpine-package-test:test
+
+      - name: Compare published baseline and candidate
+        if: github.event_name == 'workflow_dispatch' && inputs.compare_baseline
+        timeout-minutes: 10
+        run: python3 -B test/alpine_system_benchmark.py typesense-alpine-runtime:test "$RUNNER_TEMP/shared-library-comparison" dist/alpine-release/typesense-30.2-r0.apk
+
+      - name: Save shared-library comparison
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.compare_baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-library-comparison
+          path: ${{ runner.temp }}/shared-library-comparison/results.json
+          if-no-files-found: error
 
       - name: Save binary
         uses: actions/upload-artifact@v4

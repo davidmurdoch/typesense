@@ -73,7 +73,7 @@ genrule(
 )
 
 cc_library(
-    name = "zlib",
+    name = "bundled_zlib",
     srcs = [
         "adler32.c",
         "compress.c",
@@ -108,4 +108,14 @@ config_setting(
     constraint_values = [
         "@platforms//os:windows",
     ],
+)
+
+
+alias(
+    name = "zlib",
+    actual = select({
+        "@//bazel/config:musl": "@alpine_system//:zlib",
+        "//conditions:default": ":bundled_zlib",
+    }),
+    visibility = ["//visibility:public"],
 )

@@ -56,3 +56,16 @@ When updating upstream or dependency pins, review patches against the new source
 ## Build networks with a private CA
 
 Both Dockerfiles accept the optional BuildKit secret `ca_bundle` (combined public/private PEM roots); the builder also accepts `proxy_ca` (private root for the temporary Java truststore). Forward proxy addresses using Docker's standard proxy build arguments. Secrets and the temporary truststore are not installed in the image. At application build time, pass the relevant proxy and CA environment variables and mount CA files into the container; the Alpine profile forwards them to dependency builds.
+
+## System-library experiment
+
+The Alpine build uses the installed OpenSSL, libcurl, zlib, ICU and GCC runtime.
+Other platforms retain the bundled dependencies. The builder pins the matching
+headers; runtime packages include full ICU data to preserve language support.
+
+The Alpine workflow's optional compare_baseline input compares the candidate
+with published revision 3 on the same runner. It checks shared linkage, fixed
+synthetic food/locale queries and reopening baseline data, then reports startup,
+import, warm search, memory and executable/APK sizes. The footprint calculation
+also includes replacing the fleet's English-only ICU data with full data.
+The experiment does not publish a release or change production.
