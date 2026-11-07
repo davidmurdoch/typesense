@@ -31,8 +31,12 @@ configure_make(
         "//conditions:default": [],
     }),
     # libdw needs the portable error() implementation from its internal helper archive.
+    # Its private crc32 has a different signature from zlib's public crc32.
     postfix_script = select({
-        "@//bazel/config:musl": "cp $BUILD_TMPDIR/lib/libeu.a $INSTALLDIR/lib/",
+        "@//bazel/config:musl": """
+            cp $BUILD_TMPDIR/lib/libeu.a $INSTALLDIR/lib/
+            objcopy --redefine-sym crc32=typesense_elfutils_crc32 $INSTALLDIR/lib/libeu.a
+        """,
         "//conditions:default": "",
     }),
     args = ["-j4"],
