@@ -88,7 +88,7 @@ new_git_repository(
     name = "com_github_madler_zlib",
     build_file = "//bazel:zlib.BUILD",
     remote = "https://github.com/madler/zlib.git",
-    commit = "21767c654d31d2dccdde4330529775c6c5fd5389",
+    commit = "99623ef7097352da7993ba614161fd6a311e046e",  # zlib 1.4
 )
 
 # new_git_repository(
