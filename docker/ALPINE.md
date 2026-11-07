@@ -88,3 +88,13 @@ After full ICU data, installed files plus retained packages saved 18.1 MiB per
 fleet node at the same OS versions. Process PSS averaged 93.4 vs 105.4 MiB;
 startup including Docker launch averaged 3.21 vs 3.31 seconds. The trial does
 not isolate which library caused those memory/startup differences.
+
+The [bundled ICU follow-up](https://github.com/davidmurdoch/typesense/actions/runs/42384846470)
+passed the same native, locale and data-reopen checks. Its executable was
+109.2 MiB and APK 38.3 MiB, saving 10.6 MiB per node including the retained APK.
+Against its paired baseline, PSS averaged 95.1 vs 100.5 MiB and private dirty
+memory 56.5 vs 54.3 MiB. Startup averaged 3.19 seconds for both. Search p50 was
+0.839 vs 0.850 ms, p95 0.993 vs 0.981 ms, and four-client throughput 1,181 vs
+1,221 requests/s. These are averages of two runs per build with the same
+limits and fixtures; compare each candidate with its paired baseline, since
+the two trials ran on separate CI hosts.
