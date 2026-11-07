@@ -69,3 +69,7 @@ synthetic food/locale queries and reopening baseline data, then reports startup,
 import, warm search, memory and executable/APK sizes. The footprint calculation
 also includes replacing the fleet's English-only ICU data with full data.
 The experiment does not publish a release or change production.
+
+The trial pins OpenSSL 3.5.9 because Alpine no longer serves the 3.5.8 development
+package. Baseline and candidate timings use the same lab OS packages; these are
+experiment results, not approval of a new production package target.

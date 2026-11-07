@@ -214,7 +214,11 @@ def main():
     command("docker", "build", "-q", "-t", baseline_image, str(baseline))
     report = {"limits": {"cpus": 1, "memory_MiB": 256, "food_documents": 5000},
               "startup_definition": "process start to HTTP health, including Docker launch; OS file caches are not flushed",
-              "linkage": audit(Path("dist/typesense-server"), image), "runs": []}
+              "linkage": audit(Path("dist/typesense-server"), image),
+              "runtime_packages": command("docker", "run", "--rm", "--entrypoint", "apk", image,
+                  "info", "-v", "libcrypto3", "libssl3", "libcurl", "zlib",
+                  "libstdc++", "libgcc", "icu-libs", "icu-data-full").splitlines(),
+              "runs": []}
     volumes, names = [], []
     try:
         for index, label in enumerate(["baseline", "candidate", "candidate", "baseline"]):
