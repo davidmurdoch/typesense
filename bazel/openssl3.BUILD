@@ -7,7 +7,7 @@ filegroup(
 )
 
 configure_make(
-    name = "openssl",
+    name = "bundled_openssl",
     configure_command = "config",
     configure_in_place = True,
     configure_options = [
@@ -64,5 +64,15 @@ alias(
 alias(
     name = "ssl",
     actual = "openssl",
+    visibility = ["//visibility:public"],
+)
+
+
+alias(
+    name = "openssl",
+    actual = select({
+        "@//bazel/config:musl": "@alpine_system//:openssl",
+        "//conditions:default": ":bundled_openssl",
+    }),
     visibility = ["//visibility:public"],
 )

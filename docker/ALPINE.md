@@ -56,3 +56,45 @@ When updating upstream or dependency pins, review patches against the new source
 ## Build networks with a private CA
 
 Both Dockerfiles accept the optional BuildKit secret `ca_bundle` (combined public/private PEM roots); the builder also accepts `proxy_ca` (private root for the temporary Java truststore). Forward proxy addresses using Docker's standard proxy build arguments. Secrets and the temporary truststore are not installed in the image. At application build time, pass the relevant proxy and CA environment variables and mount CA files into the container; the Alpine profile forwards them to dependency builds.
+
+## System-library experiment
+
+The Alpine build uses the installed OpenSSL, libcurl, zlib and GCC runtime.
+ICU 71.1 and its full data stay bundled, preserving the production Unicode
+dependency. Other platforms retain their bundled dependencies. The builder
+pins the matching system headers.
+
+The Alpine workflow's optional compare_baseline input compares the candidate
+with published revision 3 on the same runner. It checks shared linkage, fixed
+synthetic food/locale queries and reopening baseline data, then reports startup,
+import, warm search, memory and executable/APK sizes. The current candidate
+requires no additional ICU runtime packages; disk savings include the executable
+and retained APK. Comparison runs use unpublished packages and do not deploy
+production. Tag publication follows the Alpine release workflow.
+
+The builder and comparison runtime pin OpenSSL 3.5.9 because Alpine no longer
+serves the 3.5.8 development package. Each deployment target must separately
+verify its selected system libraries; the comparison does not change OS pins.
+
+The earlier [all-five shared trial](https://github.com/davidmurdoch/typesense/actions/runs/42382842685)
+passed the native runtime/package checks, nine locale comparisons and reopening
+baseline-written data. With 1 CPU, 256 MiB and 5,000 synthetic foods, the two runs
+per build averaged 0.982 vs 0.994 ms search p50, 1.072 vs 1.084 ms p95 and 1,090
+vs 1,093 requests/s with four clients (baseline vs shared). This small trial
+showed no meaningful search-speed difference; it is not a production load test.
+
+The executable fell from 117.1 to 75.1 MiB and the APK from 41.0 to 25.0 MiB.
+After full ICU data, installed files plus retained packages saved 18.1 MiB per
+fleet node at the same OS versions. Process PSS averaged 93.4 vs 105.4 MiB;
+startup including Docker launch averaged 3.21 vs 3.31 seconds. The trial does
+not isolate which library caused those memory/startup differences.
+
+The [bundled ICU follow-up](https://github.com/davidmurdoch/typesense/actions/runs/42384846470)
+passed the same native, locale and data-reopen checks. Its executable was
+109.2 MiB and APK 38.3 MiB, saving 10.6 MiB per node including the retained APK.
+Against its paired baseline, PSS averaged 95.1 vs 100.5 MiB and private dirty
+memory 56.5 vs 54.3 MiB. Startup averaged 3.19 seconds for both. Search p50 was
+0.839 vs 0.850 ms, p95 0.993 vs 0.981 ms, and four-client throughput 1,181 vs
+1,221 requests/s. These are averages of two runs per build with the same
+limits and fixtures; compare each candidate with its paired baseline, since
+the two trials ran on separate CI hosts.

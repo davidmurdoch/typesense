@@ -4,6 +4,9 @@ FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4c
 RUN --mount=type=secret,id=ca_bundle \
     set -eu; \
     if [ -f /run/secrets/ca_bundle ]; then export SSL_CERT_FILE=/run/secrets/ca_bundle; fi; \
-    apk add --no-cache bash openrc curl jq gdb busybox-extras ca-certificates libgcc libunwind musl-fts musl-obstack
+    apk add --no-cache bash openrc curl jq gdb busybox-extras ca-certificates \
+        libgcc=15.2.0-r5 libstdc++=15.2.0-r5 libcrypto3=3.5.9-r0 libssl3=3.5.9-r0 \
+        libcurl=8.23.0-r0 zlib=1.4-r0 \
+        libunwind musl-fts musl-obstack
 COPY test/alpine_package_smoke.sh test/alpine_smoke_helpers.sh /tests/
 ENTRYPOINT ["/bin/bash", "/tests/alpine_package_smoke.sh"]

@@ -5,6 +5,12 @@ on:
     branches: ['**']
     tags: ['v*-alpine.*']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      compare_baseline:
+        description: Compare the published runtime and shared-library candidate on this runner
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,7 +54,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=alpine-builder
 
       - name: Restore build cache
-        uses: actions/cache@v4
+        id: native-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/typesense-alpine-cache
           key: alpine-${{ runner.arch }}-${{ hashFiles('WORKSPACE', 'docker/alpine-builder.Dockerfile', 'docker/bazel-6.2.0.patch') }}-${{ github.sha }}
@@ -82,10 +89,20 @@ jobs:
             sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/typesense-alpine-cache"
           fi
 
+      - name: Preserve native compilation cache
+        if: "!cancelled() && steps.native-cache.outcome == 'success' && steps.native-cache.outputs.cache-hit != 'true'"
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/typesense-alpine-cache
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
+
       - name: Test clean runtime
         run: |
           docker build -f docker/alpine.Dockerfile -t typesense-alpine-runtime:test dist
           bash test/alpine_smoke_test.sh typesense-alpine-runtime:test
+
+      - name: Check shared runtime linkage
+        run: python3 -B test/alpine_system_benchmark.py --audit typesense-alpine-runtime:test dist/typesense-server
 
       - name: Build APK packager
         uses: docker/build-push-action@v6
@@ -148,13 +165,29 @@ jobs:
             --mount "type=bind,src=$PWD/dist/alpine-release,dst=/repo,readonly" \
             typesense-alpine-package-test:test
 
+      - name: Compare published baseline and candidate
+        id: comparison
+        if: github.event_name == 'workflow_dispatch' && inputs.compare_baseline
+        timeout-minutes: 10
+        run: python3 -B test/alpine_system_benchmark.py typesense-alpine-runtime:test "$RUNNER_TEMP/shared-library-comparison" dist/alpine-release/typesense-30.2-r0.apk
+
+      - name: Save shared-library comparison
+        if: always() && (steps.comparison.outcome == 'success' || steps.comparison.outcome == 'failure')
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-library-comparison
+          path: ${{ runner.temp }}/shared-library-comparison/results.json
+          if-no-files-found: error
+
       - name: Save binary
+        if: always() && hashFiles('dist/typesense-server') != ''
         uses: actions/upload-artifact@v4
         with:
           name: typesense-server-alpine
           path: dist/typesense-server
 
       - name: Save release candidate
+        if: always() && hashFiles('dist/alpine-release/BUILD.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: typesense-alpine-packages
