@@ -57,7 +57,8 @@ def audit(binary, image):
                      "/lib/ld-musl-x86_64.so.1", image, "--list", "/opt/typesense-server")
     if "libgcc_s.so.1" not in loaded:
         missing.append("libgcc_s.so.1 (transitive runtime)")
-    symbols = command("nm", "--defined-only", str(binary))
+    # Check public library definitions; libarchive has unrelated private crc32 functions.
+    symbols = command("nm", "--defined-only", "--extern-only", str(binary))
     anchors = {"inflate", "deflate", "crc32", "SSL_new", "OPENSSL_init_crypto",
                "curl_easy_init", "__cxa_throw", "_ZSt20__throw_length_errorPKc"}
     embedded = [line.split()[-1] for line in symbols.splitlines() if line.split()
