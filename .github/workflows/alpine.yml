@@ -72,6 +72,7 @@ jobs:
             typesense-alpine-builder:test bash -ec '
               bash ci_build_v2.sh --alpine --jobs=4
               bazel test --config=alpine --jobs=4 --test_output=errors //:portability-test
+              packaging/alpine/split-debug.sh dist/typesense-server
             '
 
       - name: Make cache readable
@@ -130,6 +131,7 @@ jobs:
           mkdir -p dist/alpine-release
           docker run --rm \
             --mount "type=bind,src=$PWD/dist/typesense-server,dst=/input/typesense-server,readonly" \
+            --mount "type=bind,src=$PWD/dist/typesense-server.debug,dst=/input/typesense-server.debug,readonly" \
             --mount "type=bind,src=$PWD/dist/alpine-release,dst=/out" \
             --mount "type=bind,src=$RUNNER_TEMP/typesense-apk-signing/typesense-alpine.rsa,dst=/run/secrets/typesense-alpine.rsa,readonly" \
             -e TYPESENSE_PKGREL -e SOURCE_COMMIT -e SOURCE_DATE_EPOCH -e SOURCE_REPOSITORY \

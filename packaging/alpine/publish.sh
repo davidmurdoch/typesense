@@ -18,6 +18,7 @@ jq -e --arg tag "$tag" --arg commit "$commit" --arg repository "$GITHUB_REPOSITO
 files=("$assets"/typesense-"$upstream"-r"$revision".apk
        "$assets"/typesense-openrc-"$upstream"-r"$revision".apk
        "$assets"/typesense-server-"$upstream"-alpine."$revision"-linux-musl-amd64.tar.gz
+       "$assets"/typesense-debug-"$upstream"-alpine."$revision"-linux-musl-amd64.tar.gz
        "$assets"/APKINDEX.tar.gz "$assets"/BUILD.json "$assets"/LICENSE.txt
        "$assets"/typesense-alpine.rsa.pub "$assets"/SHA256SUMS)
 for file in "${files[@]}"; do test -f "$file"; done

@@ -26,10 +26,15 @@ docker run --rm --cpus=4 --memory=14g --memory-swap=14g \
   typesense-alpine-builder bash -ec '
     bash ci_build_v2.sh --alpine --jobs=4
     bazel test --config=alpine --jobs=4 --test_output=errors //:portability-test
+    packaging/alpine/split-debug.sh dist/typesense-server
   '
 ```
 
 The normal `bazel build --config=alpine //:typesense-server` command also works inside the builder. Compiler caching is optional and uses CMake's compiler launcher interface. The build profile does not prescribe cache paths or proxy settings.
+
+The split step preserves matching debug information in `dist/typesense-server.debug`
+and adds its debug link to the runtime binary before the runtime and package checks.
+Before rebuilding, move both files together out of `dist` to retain the matching pair.
 
 Build and check the runtime image:
 

@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -52,6 +53,7 @@ if args[0] == "api":
         self.write_state()
         for name in ["typesense-30.2-r1.apk", "typesense-openrc-30.2-r1.apk",
                      "typesense-server-30.2-alpine.1-linux-musl-amd64.tar.gz",
+                     "typesense-debug-30.2-alpine.1-linux-musl-amd64.tar.gz",
                      "APKINDEX.tar.gz", "LICENSE.txt", "typesense-alpine.rsa.pub"]:
             (self.assets / name).write_text(name + "\n")
         (self.assets / "BUILD.json").write_text(json.dumps({
@@ -95,6 +97,24 @@ if args[0] == "api":
         self.assertIn("revision=17\n", result.stdout)
         self.assertIn("release=true\n", result.stdout)
 
+    def test_rebuild_preserves_existing_binary_and_debug_pair(self):
+        project = self.directory / "build"
+        (project / "dist").mkdir(parents=True)
+        shutil.copy(ROOT / "ci_build_v2.sh", project / "ci_build_v2.sh")
+        runtime = project / "dist/typesense-server"
+        debug = project / "dist/typesense-server.debug"
+        runtime.write_bytes(b"previous runtime")
+        debug.write_bytes(b"matching debug")
+        result = subprocess.run(
+            ["bash", str(project / "ci_build_v2.sh"), "--alpine", "--jobs=1"],
+            env=dict(self.env, TYPESENSE_VERSION="30.2", TYPESENSE_TARGET="typesense-server"),
+            text=True, capture_output=True, timeout=10,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("Move the existing", result.stderr)
+        self.assertEqual(b"previous runtime", runtime.read_bytes())
+        self.assertEqual(b"matching debug", debug.read_bytes())
+
     def test_corrupted_asset_prevents_network_access(self):
         (self.assets / "typesense-30.2-r1.apk").write_text("modified")
         self.assertNotEqual(0, self.publish().returncode)
@@ -117,6 +137,12 @@ if args[0] == "api":
 
     def test_incomplete_bundle_prevents_release_creation(self):
         (self.assets / "typesense-openrc-30.2-r1.apk").unlink()
+        self.write_checksums()
+        self.assertNotEqual(0, self.publish().returncode)
+        self.assertEqual([], self.calls())
+
+    def test_missing_debug_symbols_prevent_release_creation(self):
+        (self.assets / "typesense-debug-30.2-alpine.1-linux-musl-amd64.tar.gz").unlink()
         self.write_checksums()
         self.assertNotEqual(0, self.publish().returncode)
         self.assertEqual([], self.calls())

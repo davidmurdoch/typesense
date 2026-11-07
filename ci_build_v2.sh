@@ -39,6 +39,12 @@ if [[ " $* " == *" --alpine "* ]]; then
   DEPLOY_DOCKERFILE=docker/alpine.Dockerfile
 fi
 
+# Do not overwrite a runtime paired with debug symbols from an earlier build.
+if [[ -e "$PROJECT_DIR/dist/$TYPESENSE_TARGET.debug" || -L "$PROJECT_DIR/dist/$TYPESENSE_TARGET.debug" ]]; then
+  echo "Move the existing dist/$TYPESENSE_TARGET and dist/$TYPESENSE_TARGET.debug together before rebuilding." >&2
+  exit 1
+fi
+
 # First build protobuf
 bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protobuf_headers
 bazel build "${BAZEL_FLAGS[@]}" --jobs=$JOBS @com_google_protobuf//:protobuf_lite

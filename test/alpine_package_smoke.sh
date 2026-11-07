@@ -30,6 +30,19 @@ expected=$(jq -r .binary_sha256 /repo/BUILD.json)
 test "$(sha256sum /usr/bin/typesense-server | cut -d' ' -f1)" = "$expected"
 archive=$(find /repo -name 'typesense-server-*.tar.gz')
 test "$(tar -xzOf "$archive" typesense-server | sha256sum | cut -d' ' -f1)" = "$expected"
+debug_archive=$(find /repo -name 'typesense-debug-*.tar.gz')
+mkdir /tmp/typesense-debug
+cp /usr/bin/typesense-server /tmp/typesense-debug/typesense-server
+if gdb -batch -nx -ex 'set debuginfod enabled off' -ex 'info line main' /tmp/typesense-debug/typesense-server |
+    grep -E '^Line [0-9]+ of ".*typesense_server\.cpp"' >/dev/null; then
+    echo 'Runtime binary unexpectedly contains debug lines' >&2
+    exit 1
+fi
+tar -xzf "$debug_archive" -C /tmp/typesense-debug typesense-server.debug
+test "$(sha256sum /tmp/typesense-debug/typesense-server.debug | cut -d' ' -f1)" = "$(jq -r .debug_sha256 /repo/BUILD.json)"
+test ! -e /usr/bin/typesense-server.debug
+gdb -batch -nx -ex 'set debuginfod enabled off' -ex 'info line main' /tmp/typesense-debug/typesense-server |
+    grep -E '^Line [0-9]+ of ".*typesense_server\.cpp"' >/dev/null
 test -z "$(find /repo -name '*.rsa')"
 sed -i "s/^api-key =$/api-key = $API_KEY/" /etc/typesense/typesense-server.ini
 printf '\nthread-pool-size = 8\nnum-collections-parallel-load = 1\n' >> /etc/typesense/typesense-server.ini

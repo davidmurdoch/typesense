@@ -10,6 +10,7 @@ case "$SOURCE_COMMIT" in *[!0-9a-f]*) echo "Invalid source commit" >&2; exit 1;;
 [ "${#SOURCE_COMMIT}" -eq 40 ]
 case "$SOURCE_DATE_EPOCH" in ''|*[!0-9]*) echo "Invalid source timestamp" >&2; exit 1;; esac
 [ -x /input/typesense-server ]
+[ -r /input/typesense-server.debug ]
 [ -r /run/secrets/typesense-alpine.rsa ]
 mkdir -p /work/build /work/packages /work/keys /out
 [ -z "$(ls -A /out)" ] || { echo "The output directory must be empty" >&2; exit 1; }
@@ -36,15 +37,16 @@ cp /work/keys/typesense-alpine.rsa.pub /out/
 apk index --no-warnings -o /out/APKINDEX.tar.gz /out/*.apk
 abuild-sign -k "$PACKAGER_PRIVKEY" -p typesense-alpine.rsa.pub /out/APKINDEX.tar.gz
 binary_sha256=$(sha256sum /input/typesense-server | cut -d' ' -f1)
+debug_sha256=$(sha256sum /input/typesense-server.debug | cut -d' ' -f1)
 public_key_sha256=$(sha256sum /out/typesense-alpine.rsa.pub | cut -d' ' -f1)
 tag=""
 if [ "$pkgrel" != 0 ]; then tag="v$pkgver-alpine.$pkgrel"; fi
 jq -n --arg upstream "$pkgver" --arg revision "$pkgrel" --arg tag "$tag" \
     --arg commit "$SOURCE_COMMIT" --arg repository "$SOURCE_REPOSITORY" \
-    --arg alpine "$(cat /etc/alpine-release)" --arg binary_sha256 "$binary_sha256" \
+    --arg alpine "$(cat /etc/alpine-release)" --arg binary_sha256 "$binary_sha256" --arg debug_sha256 "$debug_sha256" \
     --arg public_key_sha256 "$public_key_sha256" \
     '{upstream_version:$upstream,package_revision:$revision,tag:$tag,commit:$commit,
-      repository:$repository,alpine:$alpine,architecture:"x86_64",binary_sha256:$binary_sha256,
+      repository:$repository,alpine:$alpine,architecture:"x86_64",binary_sha256:$binary_sha256,debug_sha256:$debug_sha256,
       public_key_sha256:$public_key_sha256,
       source_url:("https://github.com/"+$repository+"/archive/"+$commit+".tar.gz")}' > /out/BUILD.json
 install -m 0644 /package/LICENSE.txt /out/LICENSE.txt
@@ -52,4 +54,7 @@ install -m 0644 /package/LICENSE.txt /out/LICENSE.txt
 archive="/out/typesense-server-$pkgver-alpine.$pkgrel-linux-musl-amd64.tar.gz"
 tar --sort=name --mtime="@$SOURCE_DATE_EPOCH" --owner=0 --group=0 --numeric-owner \
     -czf "$archive" -C /input typesense-server -C /out LICENSE.txt BUILD.json
-(cd /out && sha256sum -- *.apk APKINDEX.tar.gz BUILD.json LICENSE.txt typesense-alpine.rsa.pub typesense-server-*.tar.gz > SHA256SUMS)
+debug_archive="/out/typesense-debug-$pkgver-alpine.$pkgrel-linux-musl-amd64.tar.gz"
+tar --sort=name --mtime="@$SOURCE_DATE_EPOCH" --owner=0 --group=0 --numeric-owner \
+    -czf "$debug_archive" -C /input typesense-server.debug -C /out LICENSE.txt BUILD.json
+(cd /out && sha256sum -- *.apk APKINDEX.tar.gz BUILD.json LICENSE.txt typesense-alpine.rsa.pub typesense-server-*.tar.gz typesense-debug-*.tar.gz > SHA256SUMS)
