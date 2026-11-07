@@ -150,7 +150,7 @@ def signature(client):
 
 
 def memory(name):
-    text = command("docker", "exec", "-u", "root", name, "cat", "/proc/1/smaps_rollup")
+    text = command("docker", "exec", name, "cat", "/proc/1/smaps_rollup")
     return {line.split(":")[0] + "_KiB": int(line.split()[1]) for line in text.splitlines()
             if line.startswith(("Rss:", "Pss:", "Private_Dirty:"))}
 
