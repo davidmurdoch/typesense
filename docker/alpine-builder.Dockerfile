@@ -19,7 +19,7 @@ RUN --mount=type=tmpfs,target=/tmp --mount=type=tmpfs,target=/root/.cache \
     fi; \
     apk add --no-cache \
         bash build-base linux-headers git curl unzip zip python3 \
-        gcc=15.2.0-r5 g++=15.2.0-r5 cmake=4.2.3-r0 perl=5.42.2-r1 \
+        gcc=15.2.0-r5 g++=15.2.0-r5 cmake=4.2.3-r0 perl=5.42.3-r0 \
         openjdk11-jdk=11.0.32_p9-r0 autoconf automake libtool ninja lld patch \
         ccache zlib-dev openssl-dev libunwind-dev argp-standalone \
         musl-fts-dev musl-obstack-dev musl-libintl time; \

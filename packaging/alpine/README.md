@@ -15,8 +15,12 @@ GitHub Release assets:
 - `typesense-alpine.rsa.pub`, the public verification key.
 - `typesense-server-30.2-alpine.N-linux-musl-amd64.tar.gz`, the tested executable,
   project license and build metadata.
+- `typesense-debug-30.2-alpine.N-linux-musl-amd64.tar.gz`, matching optional
+  debug symbols, the project license and build metadata. The normal APK does not
+  install the symbols; place `typesense-server.debug` beside the matching binary
+  for GDB to load it through its debug link.
 - `BUILD.json`, recording the source commit, upstream version, package revision,
-  target platform, binary checksum and public-key fingerprint.
+  target platform, binary and debug-symbol checksums, and public-key fingerprint.
 - `LICENSE.txt` and `SHA256SUMS`.
 
 The upstream server version remains `30.2`; `N` is the downstream packaging
@@ -207,6 +211,7 @@ export TYPESENSE_PKGREL SOURCE_COMMIT SOURCE_DATE_EPOCH SOURCE_REPOSITORY
 
 docker run --rm \
   --mount "type=bind,src=$PWD/dist/typesense-server,dst=/input/typesense-server,readonly" \
+  --mount "type=bind,src=$PWD/dist/typesense-server.debug,dst=/input/typesense-server.debug,readonly" \
   --mount "type=bind,src=$PWD/dist/alpine-release,dst=/out" \
   --mount "type=bind,src=$TEST_KEY_DIR/typesense-alpine.rsa,dst=/run/secrets/typesense-alpine.rsa,readonly" \
   -e TYPESENSE_PKGREL -e SOURCE_COMMIT -e SOURCE_DATE_EPOCH -e SOURCE_REPOSITORY \
