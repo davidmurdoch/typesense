@@ -73,3 +73,16 @@ The experiment does not publish a release or change production.
 The trial pins OpenSSL 3.5.9 because Alpine no longer serves the 3.5.8 development
 package. Baseline and candidate timings use the same lab OS packages; these are
 experiment results, not approval of a new production package target.
+
+The [November 7 trial](https://github.com/davidmurdoch/typesense/actions/runs/42382842685)
+passed the native runtime/package checks, nine locale comparisons and reopening
+baseline-written data. With 1 CPU, 256 MiB and 5,000 synthetic foods, the two runs
+per build averaged 0.982 vs 0.994 ms search p50, 1.072 vs 1.084 ms p95 and 1,090
+vs 1,093 requests/s with four clients (baseline vs shared). This small trial
+showed no meaningful search-speed difference; it is not a production load test.
+
+The executable fell from 117.1 to 75.1 MiB and the APK from 41.0 to 25.0 MiB.
+After full ICU data, installed files plus retained packages saved 18.1 MiB per
+fleet node at the same OS versions. Process PSS averaged 93.4 vs 105.4 MiB;
+startup including Docker launch averaged 3.21 vs 3.31 seconds. The trial does
+not isolate which library caused those memory/startup differences.
