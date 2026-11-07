@@ -5,6 +5,11 @@ native musl executable. The `typesense` package contains the server and its
 runtime dependencies; `typesense-openrc` adds service management. Other Alpine
 branches, architectures and CUDA builds are outside this release workflow.
 
+The runtime links Alpine's OpenSSL, libcurl, zlib, libstdc++ and libgcc instead
+of embedding private copies. ICU 71.1 and its full language data remain bundled.
+APK records the shared-library requirements; verify the selected VM package
+set together with each new Typesense package before rolling it out.
+
 ## Release contents
 
 Each `v30.2-alpine.N` release is a signed repository snapshot hosted entirely as

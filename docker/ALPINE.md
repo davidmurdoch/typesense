@@ -59,7 +59,7 @@ Both Dockerfiles accept the optional BuildKit secret `ca_bundle` (combined publi
 
 ## System-library experiment
 
-The Alpine candidate uses the installed OpenSSL, libcurl, zlib and GCC runtime.
+The Alpine build uses the installed OpenSSL, libcurl, zlib and GCC runtime.
 ICU 71.1 and its full data stay bundled, preserving the production Unicode
 dependency. Other platforms retain their bundled dependencies. The builder
 pins the matching system headers.
@@ -69,12 +69,12 @@ with published revision 3 on the same runner. It checks shared linkage, fixed
 synthetic food/locale queries and reopening baseline data, then reports startup,
 import, warm search, memory and executable/APK sizes. The current candidate
 requires no additional ICU runtime packages; disk savings include the executable
-and retained APK.
-The experiment does not publish a release or change production.
+and retained APK. Comparison runs use unpublished packages and do not deploy
+production. Tag publication follows the Alpine release workflow.
 
-The trial pins OpenSSL 3.5.9 because Alpine no longer serves the 3.5.8 development
-package. Baseline and candidate timings use the same lab OS packages; these are
-experiment results, not approval of a new production package target.
+The builder and comparison runtime pin OpenSSL 3.5.9 because Alpine no longer
+serves the 3.5.8 development package. Each deployment target must separately
+verify its selected system libraries; the comparison does not change OS pins.
 
 The earlier [all-five shared trial](https://github.com/davidmurdoch/typesense/actions/runs/42382842685)
 passed the native runtime/package checks, nine locale comparisons and reopening
