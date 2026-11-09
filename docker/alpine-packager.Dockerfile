@@ -5,7 +5,7 @@ RUN --mount=type=secret,id=ca_bundle \
     set -eu; \
     if [ -f /run/secrets/ca_bundle ]; then export SSL_CERT_FILE=/run/secrets/ca_bundle; fi; \
     apk add --no-cache abuild openssl su-exec jq tar ca-certificates \
-        libgcc libstdc++ libunwind musl-fts musl-obstack libcrypto3 libssl3 libcurl zlib icu-libs icu-data-full; \
+        libgcc libstdc++ libunwind musl-fts musl-obstack libcrypto3 libssl3 libcurl zlib=1.4-r0 icu-libs icu-data-full; \
     adduser -D builder; \
     addgroup builder abuild
 
