@@ -1,9 +1,13 @@
 # Alpine releases and installation
 
 These packages target **Alpine Linux 3.24, x86-64**, with APK 3. The server is a
-native musl executable. The `typesense` package contains the server and its
+native musl executable. The `typesense` package contains the server and declares its
 runtime dependencies; `typesense-openrc` adds service management. Other Alpine
 branches, architectures and CUDA builds are outside this release workflow.
+
+The Alpine runtime uses system OpenSSL, libcurl, zlib, ICU and GCC libraries.
+Install full ICU data to preserve multilingual search; deployments using only
+`icu-data-en` need a reviewed package-target change before adopting this build.
 
 ## Release contents
 

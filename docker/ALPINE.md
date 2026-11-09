@@ -1,6 +1,6 @@
 # Native Alpine Linux builds
 
-The Alpine build targets x86-64 Linux with musl. It uses the same Typesense sources and features as the standard CPU build. CUDA and other architectures are not covered by this configuration.
+The Alpine build targets x86-64 Linux with musl and uses the same Typesense sources as the standard CPU build. CUDA and other architectures are not covered by this configuration.
 
 Prebuilt signed APK packages, OpenRC service setup and release publishing are
 documented in [packaging/alpine/README.md](../packaging/alpine/README.md).
@@ -43,7 +43,9 @@ docker build -f docker/alpine.Dockerfile -t typesense-alpine dist
 bash test/alpine_smoke_test.sh typesense-alpine
 ```
 
-The smoke test requires Docker, Bash, curl and jq. It checks imports, typo and accent matching, persistence after restart, and execution as a non-root user. The runtime contains the required musl libraries, including libgcc for exception unwinding; it contains no compiler or glibc compatibility layer. Supply `--data-dir`, `--api-key` and other server options when running it normally.
+The smoke test requires Docker, Bash, curl and jq. It checks imports, typo and accent matching, persistence after restart, and execution as a non-root user. The Alpine runtime dynamically links OpenSSL, curl, zlib, ICU and the GCC C++ runtime. Use full ICU language data to retain multilingual tokenizer support. The runtime contains no compiler or glibc compatibility layer. Supply `--data-dir`, `--api-key` and other server options when running it normally.
+
+The trial builder uses OpenSSL 3.5.9 development headers because Alpine no longer serves the 3.5.8 development APK. Its runtime target is 3.5.8; verify linking and runtime behavior against the selected deployment libraries before promoting a build.
 
 ## Dependency patches
 
