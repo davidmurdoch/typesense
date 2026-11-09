@@ -7,7 +7,7 @@ filegroup(
 )
 
 configure_make(
-    name = "openssl",
+    name = "openssl_bundled",
     configure_command = "config",
     configure_in_place = True,
     configure_options = [
@@ -53,6 +53,20 @@ configure_make(
     deps = [
         "@com_github_madler_zlib//:zlib",
     ],
+)
+
+cc_library(
+    name = "openssl_system",
+    linkopts = ["-lssl", "-lcrypto"],
+)
+
+alias(
+    name = "openssl",
+    actual = select({
+        "@//bazel/config:musl": ":openssl_system",
+        "//conditions:default": ":openssl_bundled",
+    }),
+    visibility = ["//visibility:public"],
 )
 
 alias(

@@ -18,6 +18,7 @@ build:linux --action_env=BAZEL_LINKLIBS="-l%:libstdc++.a -l%:libgcc.a"
 
 # Native Alpine uses the host JDK, CMake and musl-compatible dependencies.
 build:alpine --define=libc=musl
+build:alpine --action_env=BAZEL_LINKLIBS="-lstdc++ -lgcc"
 build:alpine --define=BRPC_WITH_LIBUNWIND=true
 build:alpine --java_runtime_version=local_jdk
 build:alpine --tool_java_runtime_version=local_jdk

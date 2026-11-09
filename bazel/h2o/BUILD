@@ -27,8 +27,10 @@ cmake(
         "@platforms//os:macos": CMAKE_MACOS_CACHE_ENTRIES,
         "//conditions:default": CMAKE_CACHE_ENTRIES,
     }),
-    generate_args = [
-        "-DCMAKE_FIND_LIBRARY_SUFFIXES=.a",
+    generate_args = select({
+        "@//bazel/config:musl": [],
+        "//conditions:default": ["-DCMAKE_FIND_LIBRARY_SUFFIXES=.a"],
+    }) + [
         "-DCMAKE_CXX_FLAGS=-DNDEBUG",
         "-DCMAKE_C_FLAGS=-DNDEBUG",
         "-DWITH_MRUBY=OFF",

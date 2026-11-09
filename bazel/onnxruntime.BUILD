@@ -252,6 +252,7 @@ cmake(
 cc_library(
     name = "onnxruntime_lib",
     linkopts = select({
+        "@//bazel/config:musl": [],
         "@platforms//os:linux": ["-static-libstdc++", "-static-libgcc"],
         "//conditions:default": [],
     }),

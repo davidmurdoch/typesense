@@ -103,6 +103,7 @@ cc_binary(
         "TYPESENSE_VERSION=\\\"$(TYPESENSE_VERSION)\\\""
     ],
     linkopts = select({
+        "@//bazel/config:musl": ["-fuse-ld=lld"],
         "@platforms//os:linux": ["-static-libstdc++", "-static-libgcc", "-fuse-ld=lld"],
         "@platforms//os:macos": ["-framework Foundation", "-framework Accelerate", "-framework Metal", "-framework MetalKit"],
         "//conditions:default": [],

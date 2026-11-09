@@ -73,7 +73,7 @@ genrule(
 )
 
 cc_library(
-    name = "zlib",
+    name = "zlib_bundled",
     srcs = [
         "adler32.c",
         "compress.c",
@@ -100,6 +100,20 @@ cc_library(
         ],
     }),
     includes = ["zlib/include/"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "zlib_system",
+    linkopts = ["-lz"],
+)
+
+alias(
+    name = "zlib",
+    actual = select({
+        "@//bazel/config:musl": ":zlib_system",
+        "//conditions:default": ":zlib_bundled",
+    }),
     visibility = ["//visibility:public"],
 )
 

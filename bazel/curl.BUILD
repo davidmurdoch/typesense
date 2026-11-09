@@ -28,7 +28,7 @@ CMAKE_LINUX_CACHE_ENTRIES = dict(CMAKE_CACHE_ENTRIES.items() + {
 }.items())
 
 cmake(
-    name = "curl",
+    name = "curl_bundled",
     build_args = ["-j8"],
     cache_entries = select({
         "@platforms//os:linux": CMAKE_LINUX_CACHE_ENTRIES,
@@ -38,4 +38,19 @@ cmake(
     lib_source = "//:all_srcs",
     out_static_libs = ["libcurl.a"],
     deps = ["@openssl"],
+)
+
+cc_library(
+    name = "curl_system",
+    linkopts = ["-lcurl"],
+    deps = ["@openssl"],
+)
+
+alias(
+    name = "curl",
+    actual = select({
+        "@//bazel/config:musl": ":curl_system",
+        "//conditions:default": ":curl_bundled",
+    }),
+    visibility = ["//visibility:public"],
 )

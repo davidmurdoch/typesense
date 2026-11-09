@@ -25,13 +25,16 @@ cmake(
     name = "s2geometry",
     build_args = ["-j8"],
     cache_entries = select({
+        "@//bazel/config:musl": dict(CMAKE_LINUX_CACHE_ENTRIES.items() + {"OPENSSL_ROOT_DIR": "/usr"}.items()),
         "@platforms//os:linux": CMAKE_LINUX_CACHE_ENTRIES,
         "@platforms//os:macos": CMAKE_MACOS_CACHE_ENTRIES,
         "//conditions:default": CMAKE_CACHE_ENTRIES,
     }),
     defines = ["S2_USE_GLOG"],
-    generate_args = [
-        "-DCMAKE_FIND_LIBRARY_SUFFIXES=.a",
+    generate_args = select({
+        "@//bazel/config:musl": [],
+        "//conditions:default": ["-DCMAKE_FIND_LIBRARY_SUFFIXES=.a"],
+    }) + [
         "-DBUILD_SHARED_LIBS=OFF",
     ],
     lib_source = ":all_srcs",
