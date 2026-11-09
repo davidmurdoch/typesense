@@ -45,7 +45,7 @@ bash test/alpine_smoke_test.sh typesense-alpine
 
 The smoke test requires Docker, Bash, curl and jq. It checks imports, typo and accent matching, persistence after restart, and execution as a non-root user. The Alpine runtime dynamically links OpenSSL, curl, zlib, ICU and the GCC C++ runtime. Use full ICU language data to retain multilingual tokenizer support. The runtime contains no compiler or glibc compatibility layer. Supply `--data-dir`, `--api-key` and other server options when running it normally.
 
-The trial builder uses OpenSSL 3.5.9 development headers because Alpine no longer serves the 3.5.8 development APK. Its runtime target is 3.5.8; verify linking and runtime behavior against the selected deployment libraries before promoting a build.
+The trial builder uses OpenSSL 3.5.9 development headers because Alpine no longer serves the 3.5.8 development APK. For a 3.5.8 trial, mount the reviewed 3.5.8 `libssl.so.3` and `libcrypto.so.3` read-only over the builder's corresponding `/usr/lib` files while building. The builder's APK metadata still reports 3.5.9. Verify the selected deployment libraries and runtime behavior before promoting a build.
 
 ## Dependency patches
 
